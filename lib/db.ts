@@ -28,3 +28,8 @@ export async function queryApplications(): Promise<ApplicationRow[]> {
 export async function insertApplication(input: Omit<ApplicationRow, 'createdAt'>) {
   await pool.query('INSERT INTO applications (id, name, phone, email, guardian_job, college, garden, gpa, department, books, marksheet_path, proof_path) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12)', [input.id, input.name, input.phone, input.email, input.guardianJob, input.college, input.garden, input.gpa, input.department, JSON.stringify(input.books), input.marksheetPath, input.proofPath])
 }
+
+export async function getApplication(id: string): Promise<ApplicationRow | null> {
+  const result = await pool.query('SELECT id, name, phone, email, guardian_job AS "guardianJob", college, garden, gpa, department, books, marksheet_path AS "marksheetPath", proof_path AS "proofPath", created_at AS "createdAt" FROM applications WHERE id = $1', [id])
+  return result.rows[0] || null
+}
