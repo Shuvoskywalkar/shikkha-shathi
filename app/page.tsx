@@ -6,6 +6,9 @@ import { ArrowDown, Check, ChevronDown, LockKeyhole, Phone, Upload, X } from 'lu
 type Department = 'science' | 'arts' | 'commerce'
 type FileState = { name: string; dataUrl: string } | null
 
+type StoredFile = { name: string }
+
+
 type Application = {
   id: string
   submittedAt: string
@@ -17,8 +20,8 @@ type Application = {
   dept: Department
   gpa: string
   books: string[]
-  marksheet: FileState
-  proof: FileState
+  marksheet: FileState | StoredFile
+  proof: FileState | StoredFile
 }
 
 const books: Record<Department, string[]> = {
@@ -68,7 +71,7 @@ export default function Page() {
   }, [])
 
   const toggleBook = (title: string) => setSelected((current) => current.includes(title) ? current.filter((item) => item !== title) : current.length < 10 ? [...current, title] : current)
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     const phone = String(data.get('phone') || '').trim()
@@ -80,9 +83,17 @@ export default function Page() {
     else if (!files.marksheet?.dataUrl || !files.proof?.dataUrl) setError('দুটি প্রয়োজনীয় কাগজপত্র আপলোড করতে হবে')
     else if (!required.every(Boolean)) setError('সবগুলো প্রয়োজনীয় তথ্য পূরণ করতে হবে')
     else {
-      const id = `TG-${Date.now().toString(36).toUpperCase()}`
-      const application = { id, submittedAt: new Date().toISOString(), name: String(data.get('name')), phone, garden: String(data.get('garden')), guardianJob: String(data.get('guardianJob')), college: String(data.get('college')), dept: dept as Department, gpa: String(data.get('gpa')), books: selected, marksheet: files.marksheet, proof: files.proof }
-      setApplications((current) => [application, ...current]); setSubmitted(application); setError('')
+      setError('')
+      const payload = new FormData()
+      for (const [key, value] of data.entries()) payload.append(key, value)
+      payload.set('department', dept)
+      payload.set('books', JSON.stringify(selected))
+      if (files.marksheet?.dataUrl && files.marksheet.name) payload.set('marksheet', await (await fetch(files.marksheet.dataUrl)).blob(), files.marksheet.name)
+      if (files.proof?.dataUrl && files.proof.name) payload.set('proof', await (await fetch(files.proof.dataUrl)).blob(), files.proof.name)
+      const response = await fetch('/api/applications', { method: 'POST', body: payload })
+      const result = await response.json()
+      if (!response.ok) { setError(result.error || 'আবেদন জমা দেওয়া যায়নি'); return }
+      setSubmitted(result.application); setApplications((current) => [result.application, ...current])
     }
   }
   const reset = () => { setSubmitted(null); setDept(''); setSelected([]); setFiles({ marksheet: null, proof: null }); setError('') }
@@ -92,8 +103,8 @@ export default function Page() {
     <section className="hero">
       <div className="hero-inner">
         <div className="eyebrow">আয়োজনে: চা-বাগানের বিশ্ববিদ্যালয় পড়ুয়া শিক্ষার্থীবৃন্দ</div>
-        <h1>চা-বাগানের সুবিধাবঞ্চিত উচ্চ-মাধ্যমিক শিক্ষার্থীদের জন্য বিনামূল্যে শিক্ষা-উপকরণ সহায়তা কর্মসূচি</h1>
-        <p>এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? তথ্য যাচাই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে।</p>
+        <h1 className="hero-title">চা-বাগানের সুবিধাবঞ্চিত উচ্চ-মাধ্যমিক শিক্ষার্থীদের জন্য বিনামূল্যে শিক্ষা-উপকরণ সহায়তা কর্মসূচি</h1>
+        <p className="hero-description">এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? তথ্য যাচাই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে। আমাদের লক্ষ্য ৫০ জন শিক্ষার্থীকে এই কর্মসূচির আওতায় সহযোগিতা করা।</p>
       </div>
       <button className="scroll-indicator" aria-label="ফর্মে যান" onClick={() => document.getElementById('form-card')?.scrollIntoView({ behavior: 'smooth' })}><ArrowDown size={24} /></button>
     </section>
@@ -113,7 +124,7 @@ export default function Page() {
 
       <section className="card contact-card"><h2>যোগাযোগ</h2><div className="contact-list">{[['সাগর বৈদ্য', 'সিলেট ইন্টারন্যাশনাল ইউনিভার্সিটি', '০১৭৭৯-৮২৯৮৫০'], ['গোপাল কালোয়ার', 'মৌলভীবাজার সরকারি কলেজ', '০১৭৬৫-৪২৮৩৮৭'], ['আকাশ নায়েক', 'শ্রীমঙ্গল সরকারি কলেজ', '০১৩২৭-৭৫৬৪৯৫'], ['রুহিত বোনার্জি', 'ইনস্টিটিউট অফ হেলথ টেকনোলজি', '০১৫৮০-৬৮৪৫৮১']].map(([name, org, phone]) => <div className="contact-item" key={name}><b>{name}</b><small>{org}</small><a href={`tel:${phone.replace(/[^0-9]/g, '')}`}><Phone size={15} />{phone}</a></div>)}</div></section>
       <footer><button className="admin-link" aria-label="প্রশাসন প্যানেল" onClick={() => setShowAdmin((value) => !value)}><LockKeyhole size={16} /></button></footer>
-      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={() => { if ((document.getElementById('admin-pass') as HTMLInputElement).value === 'lonewolf2026') setAdminUnlocked(true) }}>প্রবেশ করো</button></div> : <div><h2>আবেদনসমূহ ({applications.length})</h2>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}</p></details>)}</div>}</section>}
+      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={async () => { const pass = (document.getElementById('admin-pass') as HTMLInputElement).value; if (pass === 'lonewolf2026') { const response = await fetch('/api/applications', { headers: { 'x-admin-pass': pass } }); const result = await response.json(); setApplications(result.applications || []); setAdminUnlocked(true) } }}>প্রবেশ ক��ো</button></div> : <div><div className="admin-heading"><h2>আবেদনসমূহ ({applications.length})</h2><button className="export-btn" onClick={async () => { const response = await fetch('/api/applications/export', { headers: { 'x-admin-pass': 'lonewolf2026' } }); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'tea-garden-applications.xlsx'; link.click(); URL.revokeObjectURL(url) }}>সব আবেদন Excel</button></div>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}</p><div className="document-links"><a href={`/api/applications/${app.id}/files/marksheet?pass=lonewolf2026`} target="_blank">মার্কশীট দেখুন</a><a href={`/api/applications/${app.id}/files/proof?pass=lonewolf2026`} target="_blank">প্রমাণপত্র দেখুন</a><a href={`/api/applications/${app.id}/pdf?pass=lonewolf2026`} target="_blank">PDF ডাউনলোড</a></div></details>)}</div>}</section>}
     </div>
   </main>
 }
