@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
-import { ArrowDown, Check, ChevronDown, FileText, Leaf, LockKeyhole, Phone, Upload, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowDown, Check, ChevronDown, LockKeyhole, Phone, Upload, X } from 'lucide-react'
 
 type Department = 'science' | 'arts' | 'commerce'
 type FileState = { name: string; dataUrl: string } | null
@@ -52,6 +52,7 @@ function FilePicker({ label, value, onChange }: { label: string; value: FileStat
 }
 
 export default function Page() {
+  const [loading, setLoading] = useState(true)
   const [dept, setDept] = useState<Department | ''>('')
   const [selected, setSelected] = useState<string[]>([])
   const [files, setFiles] = useState<{ marksheet: FileState; proof: FileState }>({ marksheet: null, proof: null })
@@ -61,6 +62,11 @@ export default function Page() {
   const [adminUnlocked, setAdminUnlocked] = useState(false)
   const [applications, setApplications] = useState<Application[]>([])
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoading(false), 900)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   const toggleBook = (title: string) => setSelected((current) => current.includes(title) ? current.filter((item) => item !== title) : current.length < 10 ? [...current, title] : current)
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -69,6 +75,9 @@ export default function Page() {
     const required = [data.get('name'), phone, data.get('garden'), data.get('guardianJob'), data.get('college'), dept, data.get('gpa'), selected.length, files.marksheet?.dataUrl, files.proof?.dataUrl]
     if (!data.get('name')) setError('নাম দিতে হবে')
     else if (!/^01[0-9]{9}$/.test(phone)) setError('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিতে হবে')
+    else if (!dept) setError('বিভাগ নির্বাচন করতে হবে')
+    else if (!selected.length) setError('কমপক্ষে একটি বই নির্বাচন করতে হবে')
+    else if (!files.marksheet?.dataUrl || !files.proof?.dataUrl) setError('দুটি প্রয়োজনীয় কাগজপত্র আপলোড করতে হবে')
     else if (!required.every(Boolean)) setError('সবগুলো প্রয়োজনীয় তথ্য পূরণ করতে হবে')
     else {
       const id = `TG-${Date.now().toString(36).toUpperCase()}`
@@ -79,21 +88,19 @@ export default function Page() {
   const reset = () => { setSubmitted(null); setDept(''); setSelected([]); setFiles({ marksheet: null, proof: null }); setError('') }
 
   return <main>
+    {loading && <div className="page-loader" role="status" aria-label="লোড হচ্ছে"><div className="loader-leaf">⌁</div></div>}
     <section className="hero">
-      <div className="hero-leaf"><Leaf size={180} strokeWidth={1} /></div>
       <div className="hero-inner">
         <div className="eyebrow">আয়োজনে: চা-বাগানের বিশ্ববিদ্যালয় পড়ুয়া শিক্ষার্থীবৃন্দ</div>
-        <div className="brand-mark"><Leaf size={30} /></div>
         <h1>চা-বাগানের সুবিধাবঞ্চিত উচ্চ-মাধ্যমিক শিক্ষার্থীদের জন্য বিনামূল্যে শিক্ষা-উপকরণ সহায়তা কর্মসূচি</h1>
-        <p>এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? নিচের ফর্মটি পূরণ করো — তথ্য যাচাই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে। আমাদের লক্ষ্য ৫০ জন শিক্ষার্থীকে এই কর্মসূচির মাধ্যমে সহায়তা করা।</p>
-        <div className="hero-stats"><div><b>৫০</b><span>লক্ষ্য শিক্ষার্থী</span></div><div><b>১০</b><span>বই পর্যন্ত</span></div><div><b>০৳</b><span>আবেদন ফি</span></div></div>
+        <p>এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? তথ্য যাচাই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে।</p>
       </div>
-      <button className="scroll-indicator" onClick={() => document.getElementById('form-card')?.scrollIntoView({ behavior: 'smooth' })}><span>নিচে ফর্ম আছে</span><ArrowDown size={18} /></button>
+      <button className="scroll-indicator" aria-label="ফর্মে যান" onClick={() => document.getElementById('form-card')?.scrollIntoView({ behavior: 'smooth' })}><ArrowDown size={24} /></button>
     </section>
 
     <div className="wrap">
       <section className="card" id="form-card">
-        <div className="info-strip"><span className="pill"><b>তত্ত্বাবধানে —</b> শুভ কৈরী, স্নাতকোত্তর, ঢাকা বিশ্ববিদ্যালয়</span><span className="pill">Email: shuvokoiri0@gmail.com</span><span className="pill">Mobile: ০১৭৯১-৭৫১৫০১</span></div>
+        <div className="supervisor"><b>তত্ত্বাবধানে</b><span>শুভ কৈরী, স্নাতকোত্তর, ঢাকা বিশ্ববিদ্যালয়</span><a href="mailto:shuvokoiri0@gmail.com">Email: shuvokoiri0@gmail.com</a><a href="tel:01791751501">Mobile: ০১৭৯১৭৫১৫০১</a></div>
         {submitted ? <div className="confirm"><div className="confirm-badge"><Check size={32} /></div><h2>আবেদন সফলভাবে জমা হয়েছে</h2><p>তোমার তথ্য যাচাই করে আঞ্চলিক প্রতিনিধিরা প্রয়োজনে তোমার সাথে ফোনে যোগাযোগ করবেন। ধন্যবাদ!</p><div className="ref">{submitted.id}</div><button className="primary" onClick={reset}>আরেকটি আবেদন জমা দাও</button></div> : <form onSubmit={submit} noValidate>
           {error && <div className="err-box">{error}</div>}
           <section className="section"><SectionHead num="১" title="ব্যক্তিগত তথ্য" /><div className="field"><label>আবেদনকারীর নাম <span className="req">*</span></label><input name="name" placeholder="পূর্ণ নাম লিখুন" /></div><div className="grid2"><div className="field"><label>আবেদনকারীর মোবাইল নাম্বার <span className="req">*</span></label><input name="phone" type="tel" placeholder="01XXXXXXXXX" /><div className="hint">১১ ডিজিটের সচল নম্বর দিন</div></div><div className="field"><label>আবেদনকারী কোন চা-বাগানের অধিবাসী? <span className="req">*</span></label><input name="garden" placeholder="চা-বাগানের নাম" /></div></div><div className="field"><label>আবেদনকারীর অভিভাবকের পেশা <span className="req">*</span></label><input name="guardianJob" placeholder="যেমনঃ চা-শ্রমিক, দিনমজুর ইত্যাদি" /></div></section>
