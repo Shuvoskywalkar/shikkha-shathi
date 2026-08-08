@@ -109,7 +109,7 @@ export default function Page() {
     <section className="hero">
       <div className="hero-inner">
         <div className="eyebrow">আয়োজনে: চা-বাগানের বিশ্ববিদ্যালয় পড়ুয়া শিক্ষার্থীবৃন্দ</div>
-        <h1 className="hero-title">চা-বাগানের সুবিধাবঞ্চিত উচ্চ-মাধ্যমিক শিক্ষার্থীদের জন্য বিনামূল্যে শিক্ষা-উপকরণ সহায়তা কর্মসূচি</h1>
+        <h1 className="hero-title">চা-বাগানের সুবিধাবঞ্চিত উচ্চ-মাধ্যমিক শিক্ষার্থীদের জন্য বিনামূল্যে শিক্ষা-উপকরণ সহায়তা কর্মসূচি ২০২৬</h1>
         <p className="hero-description">এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? তথ্য যাচাই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে। আমাদের লক্ষ্য ৫০ জন শিক্ষার্থীকে এই কর্মসূচির আওতায় সহযোগিতা করা।</p>
       </div>
       {showScrollButton && <button className="scroll-indicator" aria-label="ফর্মে যান" onClick={() => { document.getElementById('form-card')?.scrollIntoView({ behavior: 'smooth' }); setShowScrollButton(false) }}><ArrowDown size={24} /></button>}
@@ -117,7 +117,7 @@ export default function Page() {
 
     <div className="wrap">
       <section className="card" id="form-card">
-        <div className="supervisor"><b>তত্ত্বাবধানে</b><span>শুভ কৈরী, স্নাতকোত্তর, ঢাকা বিশ্ববিদ্যালয়</span><a href="mailto:shuvokoiri0@gmail.com">Email: shuvokoiri0@gmail.com</a><a href="tel:01791751501">Mobile: ০১৭৯১৭৫১৫০১</a></div>
+        <div className="supervisor"><b>তত্ত্বাবধানে</b><span>শুভ কৈরী, স্নাতকোত্তর, ঢাকা বিশ্ববিদ্যালয়</span><a href="mailto:shuvokoiri0@gmail.com">Email: shuvokoiri0@gmail.com</a><a href="tel:01791751501">Mobile: 01791751501</a></div>
         {submitted ? <div className="confirm"><div className="confirm-badge"><Check size={32} /></div><h2>আবেদন সফলভাবে জমা হয়েছে</h2><p>তোমার তথ্য যাচাই করে আঞ্চলিক প্রতিনিধিরা প্রয়োজনে তোমার সাথে ফোনে যোগাযোগ করবেন। ধন্যবাদ!</p><div className="ref">{submitted.id}</div><button className="primary" onClick={reset}>আরেকটি আবেদন জমা দাও</button></div> : <form onSubmit={submit} noValidate>
           {error && <div className="err-box">{error}</div>}
           <section className="section"><SectionHead num="১" title="ব্যক্তিগত তথ্য" /><div className="field"><label>আবেদনকারীর নাম <span className="req">*</span></label><input name="name" placeholder="পূর্ণ নাম লিখুন" /></div><div className="grid2"><div className="field"><label>আবেদনকারীর মোবাইল নাম্বার <span className="req">*</span></label><input name="phone" type="tel" placeholder="01XXXXXXXXX" /><div className="hint">১১ ডিজিটের সচল নম্বর দিন</div></div><div className="field"><label>আবেদনকারী কোন চা-বাগানের অধিবাসী? <span className="req">*</span></label><input name="garden" placeholder="চা-বাগানের নাম" /></div></div><div className="field"><label>আবেদনকারীর অভিভাবকের পেশা <span className="req">*</span></label><input name="guardianJob" placeholder="যেমনঃ চা-শ্রমিক, দিনমজুর ইত্যাদি" /></div></section>
