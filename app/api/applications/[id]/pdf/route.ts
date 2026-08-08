@@ -12,5 +12,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const lines = [`Tea Garden Education Support Application`, `Reference: ${row.id}`, `Name: ${row.name}`, `Phone: ${row.phone}`, `College: ${row.college}`, `Tea garden: ${row.garden}`, `Guardian job: ${row.guardian_job}`, `GPA: ${row.gpa}`, `Department: ${row.department}`, `Books: ${(row.books as string[]).join(', ')}`, `Marksheet: ${row.marksheet_path ? 'Uploaded' : 'Missing'}`, `Proof document: ${row.proof_path ? 'Uploaded' : 'Missing'}`]
   lines.forEach((line, index) => page.drawText(line, { x: 48, y: 780 - index * 34, size: index === 0 ? 18 : 11, font, color: rgb(0.1, 0.2, 0.14) }))
   const bytes = await pdf.save()
-  return new NextResponse(bytes, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${id}.pdf"` } })
+  return new NextResponse(bytes, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${id}.pdf"; filename*=UTF-8''${encodeURIComponent(`${id}.pdf`)}` } })
 }
