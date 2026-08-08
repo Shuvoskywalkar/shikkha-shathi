@@ -64,10 +64,15 @@ export default function Page() {
   const [showAdmin, setShowAdmin] = useState(false)
   const [adminUnlocked, setAdminUnlocked] = useState(false)
   const [applications, setApplications] = useState<Application[]>([])
+  const [showScrollButton, setShowScrollButton] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLoading(false), 900)
-    return () => window.clearTimeout(timer)
+    const onScroll = () => setShowScrollButton(window.scrollY < Math.max(220, window.innerHeight * 0.72))
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => { window.clearTimeout(timer); window.removeEventListener('scroll', onScroll) }
   }, [])
 
   const toggleBook = (title: string) => setSelected((current) => current.includes(title) ? current.filter((item) => item !== title) : current.length < 10 ? [...current, title] : current)
@@ -84,6 +89,7 @@ export default function Page() {
     else if (!required.every(Boolean)) setError('সবগুলো প্রয়োজনীয় তথ্য পূরণ করতে হবে')
     else {
       setError('')
+      setSubmitting(true)
       const payload = new FormData()
       for (const [key, value] of data.entries()) payload.append(key, value)
       payload.set('department', dept)
@@ -92,8 +98,8 @@ export default function Page() {
       if (files.proof?.dataUrl && files.proof.name) payload.set('proof', await (await fetch(files.proof.dataUrl)).blob(), files.proof.name)
       const response = await fetch('/api/applications', { method: 'POST', body: payload })
       const result = await response.json()
-      if (!response.ok) { setError(result.error || 'আবেদন জমা দেওয়া যায়নি'); return }
-      setSubmitted(result.application); setApplications((current) => [result.application, ...current])
+      if (!response.ok) { setSubmitting(false); setError(result.error || 'আবেদন জমা দেওয়া যায়নি'); return }
+      setSubmitting(false); setSubmitted(result.application); setApplications((current) => [result.application, ...current])
     }
   }
   const reset = () => { setSubmitted(null); setDept(''); setSelected([]); setFiles({ marksheet: null, proof: null }); setError('') }
@@ -106,7 +112,7 @@ export default function Page() {
         <h1 className="hero-title">চা-বাগানের সুবিধাবঞ্চিত উচ্চ-মাধ্যমিক শিক্ষার্থীদের জন্য বিনামূল্যে শিক্ষা-উপকরণ সহায়তা কর্মসূচি</h1>
         <p className="hero-description">এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? তথ্য যাচাই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে। আমাদের লক্ষ্য ৫০ জন শিক্ষার্থীকে এই কর্মসূচির আওতায় সহযোগিতা করা।</p>
       </div>
-      <button className="scroll-indicator" aria-label="ফর্মে যান" onClick={() => document.getElementById('form-card')?.scrollIntoView({ behavior: 'smooth' })}><ArrowDown size={24} /></button>
+      {showScrollButton && <button className="scroll-indicator" aria-label="ফর্মে যান" onClick={() => { document.getElementById('form-card')?.scrollIntoView({ behavior: 'smooth' }); setShowScrollButton(false) }}><ArrowDown size={24} /></button>}
     </section>
 
     <div className="wrap">
@@ -118,7 +124,7 @@ export default function Page() {
           <section className="section"><SectionHead num="২" title="শিক্ষা সংক্রান্ত তথ্য" /><div className="field"><label>আবেদনকারীর কলেজের নাম <span className="req">*</span></label><input name="college" placeholder="কলেজের পূর্ণ নাম" /></div><div className="grid2"><div className="field"><label>আবেদনকারী কলেজে কোন বিভাগে অধ্যয়নরত? <span className="req">*</span></label><select value={dept} onChange={(e) => { setDept(e.target.value as Department); setSelected([]) }}><option value="">বিভাগ নির্বাচন করুন</option><option value="science">বিজ্ঞান বিভাগ</option><option value="arts">মানবিক বিভাগ</option><option value="commerce">ব্যবসায় শিক্ষা বিভাগ</option></select></div><div className="field"><label>SSC পরীক্ষার ফলাফল (GPA) <span className="req">*</span></label><input name="gpa" type="number" min="1" max="5" step=".01" placeholder="যেমনঃ 4.50" /></div></div></section>
           <section className="section"><SectionHead num="৩" title="বই নির্বাচন" /><p className="section-sub">তোমার বিভাগের সিলেবাস অনুযায়ী তালিকা থেকে সর্বোচ্চ ১০টি বই বেছে নাও</p>{!dept ? <div className="dept-empty">প্রথমে উপরে থেকে তোমার বিভাগ নির্বাচন করো — তারপর এখানে বইয়ের তালিকা দেখা যাবে।</div> : <><div className="book-progress"><div className="book-progress-track"><div className="book-progress-fill" style={{ width: `${selected.length * 10}%` }} /></div><span>{bn(selected.length)} / ১০ নির্বাচিত</span></div><div className="book-grid">{books[dept].map((book) => <label key={book} className={`book-item ${selected.includes(book) ? 'checked' : ''} ${!selected.includes(book) && selected.length >= 10 ? 'disabled' : ''}`}><input type="checkbox" checked={selected.includes(book)} onChange={() => toggleBook(book)} /><span>{book}</span></label>)}</div></>}</section>
           <section className="section"><SectionHead num="৪" title="প্রয়োজনীয় কাগজপত্র" /><FilePicker label="নিজের SSC পরীক্ষার মার্কশীট আপলোড করো" value={files.marksheet} onChange={(value) => setFiles((current) => ({ ...current, marksheet: value }))} /><FilePicker label="অভিভাবকের পেশার প্রমাণপত্র / চা-বাগানের অধিবাসী প্রত্যয়নপত্র আপলোড করো" value={files.proof} onChange={(value) => setFiles((current) => ({ ...current, proof: value }))} /></section>
-          <div className="submit-row"><button type="submit" className="primary">আবেদন জমা দাও</button><span>জমা দেওয়ার পর একটি রেফারেন্স নম্বর পাবে</span></div>
+          <div className="submit-row"><button type="submit" className="primary" disabled={submitting}>{submitting ? <><span className="submit-spinner" aria-hidden="true" /> আবেদন প্রক্রিয়াধীন...</> : 'আবেদন জমা দাও'}</button><span>{submitting ? 'তথ্য ও ফাইল নিরাপদে সংরক্ষণ করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন...' : 'জমা দেওয়ার পর একটি রেফারেন্স নম্বর পাবে'}</span></div>
         </form>}
       </section>
 
