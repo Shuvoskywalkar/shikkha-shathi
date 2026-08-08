@@ -1,4 +1,4 @@
-import { get } from '@vercel/blob'
+import { getBlob } from '@/lib/blob'
 import { NextRequest, NextResponse } from 'next/server'
 import { pool } from '@/lib/db'
 
@@ -11,9 +11,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const result = await pool.query(`SELECT ${column} AS path FROM applications WHERE id = $1`, [id])
     const pathname = result.rows[0]?.path
     if (!pathname) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const blob = await get(pathname, { access: 'private' })
+    const blob = await getBlob(pathname, { access: 'private' })
     if (!blob) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return new NextResponse(blob.stream, { headers: { 'Content-Type': blob.blob.contentType || 'application/octet-stream', 'Content-Disposition': `inline; filename="${kind}-${id}"`, 'Cache-Control': 'private, no-store' } })
+    const filename = pathname.split('/').pop() || `${kind}-${id}`
+    return new NextResponse(blob.stream, { headers: { 'Content-Type': blob.contentType || 'application/octet-stream', 'Content-Disposition': `inline; filename="${filename}"`, 'Cache-Control': 'private, no-store' } })
   } catch (error) {
     console.error('[v0] private file delivery failed', error)
     return NextResponse.json({ error: 'ফাইলটি খোলা যায়নি' }, { status: 500 })

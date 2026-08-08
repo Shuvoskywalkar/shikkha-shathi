@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob'
+import { putBlob } from '@/lib/blob'
 import { NextRequest, NextResponse } from 'next/server'
 import { insertApplication, queryApplications } from '@/lib/db'
 
@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
     for (const [key, file] of Object.entries(files)) { if (!file || file.size === 0) fieldError(fields, key, 'প্রয়োজনীয় ফাইল আপলোড করুন'); else if (!allowedTypes.includes(file.type)) fieldError(fields, key, 'JPG, PNG বা WEBP ছবি দিন'); else if (file.size > MAX_FILE_SIZE) fieldError(fields, key, 'ফাইলটি ৮ এমবির নিচে হতে হবে') }
     if (Object.keys(fields).length) return NextResponse.json({ error: 'তথ্যগুলো ঠিক করে আবার চেষ্টা করুন', fields }, { status: 400 })
     const id = `TG-${Date.now().toString(36).toUpperCase()}`
-    const [markBlob, proofBlob] = await Promise.all([put(`applications/${id}/marksheet-${files.marksheet!.name}`, files.marksheet!, { access: 'private', addRandomSuffix: false }), put(`applications/${id}/proof-${files.proof!.name}`, files.proof!, { access: 'private', addRandomSuffix: false })])
+    const [markBlob, proofBlob] = await Promise.all([
+      putBlob(`applications/${id}/marksheet-${files.marksheet!.name}`, files.marksheet!, { access: 'private', addRandomSuffix: false }),
+      putBlob(`applications/${id}/proof-${files.proof!.name}`, files.proof!, { access: 'private', addRandomSuffix: false }),
+    ])
     await insertApplication({ id, name, phone, email, guardianJob, college, garden, gpa, department, books, marksheetPath: markBlob.pathname, proofPath: proofBlob.pathname })
     return NextResponse.json({ application: { id, submittedAt: new Date().toISOString(), name, phone, garden, guardianJob, college, dept: department, gpa, books, marksheet: { name: files.marksheet!.name }, proof: { name: files.proof!.name } } })
   } catch (error) { console.error('[v0] application submission failed', error); return NextResponse.json({ error: 'আবেদন জমা দেওয়া যায়নি। আবার চেষ্টা করুন।' }, { status: 500 }) }

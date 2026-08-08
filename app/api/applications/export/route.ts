@@ -1,4 +1,4 @@
-import { get } from '@vercel/blob'
+import { getBlob } from '@/lib/blob'
 import ExcelJS from 'exceljs'
 import { NextRequest, NextResponse } from 'next/server'
 import { queryApplications } from '@/lib/db'
@@ -8,9 +8,9 @@ export const runtime = 'nodejs'
 
 async function blobBuffer(pathname: string | null) {
   if (!pathname) return null
-  const result = await get(pathname, { access: 'private' })
+  const result = await getBlob(pathname, { access: 'private' })
   if (!result) return null
-  return Buffer.from(await new Response(result.stream).arrayBuffer())
+  return result.buffer
 }
 
 export async function GET(request: NextRequest) {
@@ -38,7 +38,11 @@ export async function GET(request: NextRequest) {
       for (const [column, pathname, url] of [[12, row.marksheetPath, marksheetUrl], [13, row.proofPath, proofUrl]] as const) {
         if (!pathname || !url) continue
         const image = await blobBuffer(pathname)
-        if (image) { const imageId = workbook.addImage({ buffer: image, extension: pathname.toLowerCase().endsWith('.png') ? 'png' : 'jpeg' }); sheet.addImage(imageId, { tl: { col: column - 1 + 0.08, row: rowNumber - 1 + 0.08 }, ext: { width: 125, height: 95 } }) }
+        if (image) {
+          const extension = pathname.toLowerCase().endsWith('.png') ? 'png' : 'jpeg'
+          const imageId = workbook.addImage({ buffer: image, extension })
+          sheet.addImage(imageId, { tl: { col: column - 1 + 0.08, row: rowNumber - 1 + 0.08 }, ext: { width: 125, height: 95 } })
+        }
         sheet.getCell(rowNumber, column).value = { text: 'ফাইল খুলুন', hyperlink: url }
         sheet.getCell(rowNumber, column).font = { color: { argb: 'FF0563C1' }, underline: 'single' }
       }
