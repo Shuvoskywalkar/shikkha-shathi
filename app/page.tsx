@@ -70,6 +70,26 @@ export default function Page() {
   const [applications, setApplications] = useState<Application[]>([])
   const [showScrollButton, setShowScrollButton] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [adminError, setAdminError] = useState('')
+
+  const readResponse = async (response: Response) => {
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) return response.json()
+    const message = await response.text()
+    return { error: message || `সার্ভার ত্রুটি (${response.status})` }
+  }
+
+  const unlockAdmin = async () => {
+    const pass = (document.getElementById('admin-pass') as HTMLInputElement)?.value.trim()
+    setAdminError('')
+    if (!pass) { setAdminError('পাসকোড লিখুন'); return }
+    try {
+      const response = await fetch('/api/applications', { headers: { 'x-admin-pass': pass }, cache: 'no-store' })
+      const result = await readResponse(response)
+      if (!response.ok) { setAdminError(result.error || 'পাসকোড সঠিক নয়'); return }
+      setApplications(result.applications || []); setAdminUnlocked(true)
+    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') }
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLoading(false), 900)
@@ -101,7 +121,7 @@ export default function Page() {
       payload.set('department', dept); payload.set('books', JSON.stringify(selected))
       if (files.marksheet?.dataUrl) payload.set('marksheet', await (await fetch(files.marksheet.dataUrl)).blob(), files.marksheet.name)
       if (files.proof?.dataUrl) payload.set('proof', await (await fetch(files.proof.dataUrl)).blob(), files.proof.name)
-      const response = await fetch('/api/applications', { method: 'POST', body: payload }); const result = await response.json()
+      const response = await fetch('/api/applications', { method: 'POST', body: payload }); const result = await readResponse(response)
       if (!response.ok) { setFieldErrors(result.fields || {}); setError(result.error || 'আবেদন জমা দেওয়া যায়নি'); return }
       setSubmitted(result.application); setApplications((current) => [result.application, ...current])
     } catch { setError('সার্ভারের সাথে যোগাযোগ করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন') } finally { setSubmitting(false) }
@@ -135,7 +155,7 @@ export default function Page() {
 
       <section className="card contact-card"><h2>যোগাযোগ</h2><div className="contact-list">{[['সাগর বৈদ্য', 'সিলেট ইন্টারন্যাশনাল ইউনিভার্সিটি', '০১৭৭৯-৮২৯৮৫০'], ['গোপাল কালোয়ার', 'মৌলভীবাজার সরকারি কলেজ', '০১৭৬৫-৪২৮৩৮৭'], ['আকাশ নায়েক', 'শ্রীমঙ্গল সরকারি কলেজ', '০১৩২৭-৭৫৬৪৯৫'], ['রুহিত বোনার্জি', 'ইনস্টিটিউট অফ হেলথ টেকনোলজি', '০১৫৮০-৬৮৪৫৮১']].map(([name, org, phone]) => <div className="contact-item" key={name}><b>{name}</b><small>{org}</small><a href={`tel:${phone.replace(/[^0-9]/g, '')}`}><Phone size={15} />{phone}</a></div>)}</div></section>
       <footer><button className="admin-link" aria-label="প্রশাসন প্যানেল" onClick={() => setShowAdmin((value) => !value)}><LockKeyhole size={16} /></button></footer>
-      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={async () => { const pass = (document.getElementById('admin-pass') as HTMLInputElement).value; if (pass === 'lonewolf2026') { const response = await fetch('/api/applications', { headers: { 'x-admin-pass': pass } }); const result = await response.json(); setApplications(result.applications || []); setAdminUnlocked(true) } }}>প্রবেশ করুন</button></div> : <div><div className="admin-heading"><h2>আবেদনসমূহ ({applications.length})</h2><button className="export-btn" onClick={async () => { const response = await fetch('/api/applications/export', { headers: { 'x-admin-pass': 'lonewolf2026' } }); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'tea-garden-applications.xlsx'; link.click(); URL.revokeObjectURL(url) }}>সব আবেদন Excel</button></div>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />অভিভাবকের পেশা: {app.guardianJob}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}<br />মার্কশীট: {app.marksheet?.name || 'নেই'}<br />প্রমাণপত্র: {app.proof?.name || 'নেই'}</p><div className="document-links"><a href={`/api/applications/${app.id}/files/marksheet?pass=lonewolf2026`} target="_blank" rel="noreferrer" download>মার্কশীট দেখুন</a><a href={`/api/applications/${app.id}/files/proof?pass=lonewolf2026`} target="_blank" rel="noreferrer" download>প্রমাণপত্র দেখুন</a><a href={`/api/applications/${app.id}/pdf?pass=lonewolf2026`} download={`${app.id}.pdf`}>PDF ডাউনলোড</a></div></details>)}</div>}</section>}
+      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={unlockAdmin}>প্রবেশ করুন</button>{adminError && <div className="err-box" role="alert">{adminError}</div>}</div> : <div><div className="admin-heading"><h2>আবেদনসমূহ ({applications.length})</h2><button className="export-btn" onClick={async () => { const response = await fetch('/api/applications/export', { headers: { 'x-admin-pass': 'lonewolf2026' } }); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'tea-garden-applications.xlsx'; link.click(); URL.revokeObjectURL(url) }}>সব আবেদন Excel</button></div>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />অভিভাবকের পেশা: {app.guardianJob}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}<br />মার্কশীট: {app.marksheet?.name || 'নেই'}<br />প্রমাণপত্র: {app.proof?.name || 'নেই'}</p><div className="document-links"><a href={`/api/applications/${app.id}/files/marksheet?pass=lonewolf2026`} target="_blank" rel="noreferrer" download>মার্কশীট দেখুন</a><a href={`/api/applications/${app.id}/files/proof?pass=lonewolf2026`} target="_blank" rel="noreferrer" download>প্রমাণপত্র দেখুন</a><a href={`/api/applications/${app.id}/pdf?pass=lonewolf2026`} download={`${app.id}.pdf`}>PDF ডাউনলোড</a></div></details>)}</div>}</section>}
     </div>
   </main>
 }
