@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     workbook.created = new Date()
     const sheet = workbook.addWorksheet('আবেদনসমূহ', { views: [{ state: 'frozen', ySplit: 1 }] })
     sheet.columns = [
-      { header: 'রেফারেন্স', key: 'id', width: 18 }, { header: 'নাম', key: 'name', width: 24 }, { header: 'মোবাইল', key: 'phone', width: 16 }, { header: 'ইমেইল', key: 'email', width: 28 }, { header: 'কলেজ', key: 'college', width: 30 }, { header: 'চা-বাগান', key: 'garden', width: 24 }, { header: 'অভিভাবকের পেশা', key: 'guardianJob', width: 24 }, { header: 'GPA', key: 'gpa', width: 10 }, { header: 'বিভাগ', key: 'department', width: 16 }, { header: 'বই', key: 'books', width: 42 }, { header: 'জমাদানের সময়', key: 'createdAt', width: 24 }, { header: 'মার্কশীট প্রিভিউ', key: 'marksheet', width: 22 }, { header: 'প্রমাণপত্র প্রিভিউ', key: 'proof', width: 22 }, { header: 'PDF', key: 'pdf', width: 16 },
+      { header: 'রেফারেন্স', key: 'id', width: 18 }, { header: 'নাম', key: 'name', width: 24 }, { header: 'মোবাইল', key: 'phone', width: 16 }, { header: 'ইমেইল', key: 'email', width: 28 }, { header: 'কলেজ', key: 'college', width: 30 }, { header: 'চা-বাগান', key: 'garden', width: 24 }, { header: 'অভিভাবকের পেশা', key: 'guardianJob', width: 24 }, { header: 'GPA', key: 'gpa', width: 10 }, { header: 'বিভাগ', key: 'department', width: 16 }, { header: 'বই ও লেখক/প্রকাশনী', key: 'books', width: 58 }, { header: 'জমাদানের সময়', key: 'createdAt', width: 24 }, { header: 'মার্কশীট প্রিভিউ', key: 'marksheet', width: 22 }, { header: 'প্রমাণপত্র প্রিভিউ', key: 'proof', width: 22 }, { header: 'PDF', key: 'pdf', width: 16 },
     ]
     sheet.getRow(1).height = 28
     sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const origin = configuredOrigin ? (configuredOrigin.startsWith('http') ? configuredOrigin : `https://${configuredOrigin}`) : request.nextUrl.origin
     const baseUrl = origin.replace(/\/$/, '')
     for (const row of rows) {
-      const excelRow = sheet.addRow({ id: row.id, name: row.name, phone: row.phone, email: row.email || '', college: row.college, garden: row.garden, guardianJob: row.guardianJob, gpa: Number(row.gpa), department: row.department, books: row.books.join(', '), createdAt: row.createdAt.toLocaleString('bn-BD') })
+      const excelRow = sheet.addRow({ id: row.id, name: row.name, phone: row.phone, email: row.email || '', college: row.college, garden: row.garden, guardianJob: row.guardianJob, gpa: Number(row.gpa), department: row.department, books: row.books.map((book) => row.bookWriters?.[book] ? `${book} — ${row.bookWriters[book]}` : book).join(', '), createdAt: row.createdAt.toLocaleString('bn-BD') })
       excelRow.height = 110
       const rowNumber = excelRow.number
       const marksheetUrl = row.marksheetPath ? `${baseUrl}/api/applications/${row.id}/files/marksheet?pass=${ADMIN_PASS}` : ''
