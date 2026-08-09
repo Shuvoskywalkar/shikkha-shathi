@@ -32,10 +32,11 @@ export async function GET(request: NextRequest) {
       excelRow.height = 110
       const rowNumber = excelRow.number
       const configuredOrigin = process.env.BETTER_AUTH_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
-      const origin = configuredOrigin ? (configuredOrigin.startsWith('http') ? configuredOrigin : `https://${configuredOrigin}`) : ''
-      const marksheetUrl = row.marksheetPath ? `${origin}/api/applications/${row.id}/files/marksheet?pass=${ADMIN_PASS}` : ''
-      const proofUrl = row.proofPath ? `${origin}/api/applications/${row.id}/files/proof?pass=${ADMIN_PASS}` : ''
-      const pdfUrl = `${origin}/api/applications/${row.id}/pdf?pass=${ADMIN_PASS}`
+      const origin = configuredOrigin ? (configuredOrigin.startsWith('http') ? configuredOrigin : `https://${configuredOrigin}`) : request.nextUrl.origin
+      const baseUrl = origin.replace(/\/$/, '')
+      const marksheetUrl = row.marksheetPath ? `${baseUrl}/api/applications/${row.id}/files/marksheet?pass=${ADMIN_PASS}` : ''
+      const proofUrl = row.proofPath ? `${baseUrl}/api/applications/${row.id}/files/proof?pass=${ADMIN_PASS}` : ''
+      const pdfUrl = `${baseUrl}/api/applications/${row.id}/pdf?pass=${ADMIN_PASS}`
       for (const [column, pathname, url] of [[12, row.marksheetPath, marksheetUrl], [13, row.proofPath, proofUrl]] as const) {
         if (!pathname || !url) continue
         const image = await blobBuffer(pathname)
