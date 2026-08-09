@@ -10,7 +10,7 @@ const fieldError = (fields: Record<string, string>, key: string, message: string
 export async function GET(request: NextRequest) {
   if (request.headers.get('x-admin-pass') !== ADMIN_PASS) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const rows = await queryApplications()
-  return NextResponse.json({ applications: rows.map((row) => ({ id: row.id, submittedAt: row.createdAt, name: row.name, phone: row.phone, garden: row.garden, guardianJob: row.guardianJob, college: row.college, dept: row.department, gpa: row.gpa, books: row.books, marksheet: row.marksheetPath ? { name: 'মার্কশীট' } : null, proof: row.proofPath ? { name: 'প্রমাণপত্র' } : null })) })
+  return NextResponse.json({ applications: rows.map((row) => ({ id: row.id, submittedAt: row.createdAt, name: row.name, phone: row.phone, garden: row.garden, guardianJob: row.guardianJob, college: row.college, dept: row.department, gpa: row.gpa, books: row.books, bookWriters: row.bookWriters, marksheet: row.marksheetPath ? { name: 'মার্কশীট' } : null, proof: row.proofPath ? { name: 'প্রমাণপত্র' } : null })) })
 }
 
 export async function POST(request: NextRequest) {
@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
     if (!/^01[0-9]{9}$/.test(phone)) fieldError(fields, 'phone', 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন')
     const numericGpa = Number(gpa); if (!Number.isFinite(numericGpa) || numericGpa < 1 || numericGpa > 5) fieldError(fields, 'gpa', 'GPA ১ থেকে ৫-এর মধ্যে দিন')
     if (!['science', 'arts', 'commerce'].includes(department)) fieldError(fields, 'department', 'বিভাগ নির্বাচন করুন')
-    let books: string[] = []; try { const parsed = JSON.parse(String(form.get('books') || '[]')); if (Array.isArray(parsed)) books = parsed.filter((book): book is string => typeof book === 'string' && book.trim()).map((book) => book.trim()) } catch { fieldError(fields, 'books', 'বইয়ের তালিকা সঠিক নয়') }
+    let books: string[] = []; let bookWriters: Record<string, string> = {}; try { const parsed = JSON.parse(String(form.get('books') || '[]')); if (Array.isArray(parsed)) books = parsed.filter((book): book is string => typeof book === 'string' && book.trim()).map((book) => book.trim()) } catch { fieldError(fields, 'books', 'বইয়ের তালিকা সঠিক নয়') }
     if (books.length < 1 || books.length > 10) fieldError(fields, 'books', '১ থেকে ১০টি বই নির্বাচন করুন')
+    try { const parsedWriters = JSON.parse(String(form.get('bookWriters') || '{}')); if (parsedWriters && typeof parsedWriters === 'object' && !Array.isArray(parsedWriters)) bookWriters = Object.fromEntries(books.map((book) => [book, typeof parsedWriters[book] === 'string' ? parsedWriters[book].trim() : ''])) } catch { fieldError(fields, 'books', 'বইয়ের লেখকের তথ্য সঠিক নয়') }
     const files = { marksheet: form.get('marksheet') as File | null, proof: form.get('proof') as File | null }
     for (const [key, file] of Object.entries(files)) { if (!file || file.size === 0) fieldError(fields, key, 'প্রয়োজনীয় ফাইল আপলোড করুন'); else if (!allowedTypes.includes(file.type)) fieldError(fields, key, 'JPG, PNG বা WEBP ছবি দিন'); else if (file.size > MAX_FILE_SIZE) fieldError(fields, key, 'ফাইলটি ৮ এমবির নিচে হতে হবে') }
     if (Object.keys(fields).length) return NextResponse.json({ error: 'তথ্যগুলো ঠিক করে আবার চেষ্টা করুন', fields }, { status: 400 })
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       putBlob(`applications/${id}/marksheet-${files.marksheet!.name}`, files.marksheet!, { access: 'private', addRandomSuffix: false }),
       putBlob(`applications/${id}/proof-${files.proof!.name}`, files.proof!, { access: 'private', addRandomSuffix: false }),
     ])
-    await insertApplication({ id, name, phone, email, guardianJob, college, garden, gpa, department, books, marksheetPath: markBlob.pathname, proofPath: proofBlob.pathname })
+    await insertApplication({ id, name, phone, email, guardianJob, college, garden, gpa, department, books, bookWriters, marksheetPath: markBlob.pathname, proofPath: proofBlob.pathname })
     return NextResponse.json({ application: { id, submittedAt: new Date().toISOString(), name, phone, garden, guardianJob, college, dept: department, gpa, books, marksheet: { name: files.marksheet!.name }, proof: { name: files.proof!.name } } })
   } catch (error) { console.error('[v0] application submission failed', error); return NextResponse.json({ error: 'আবেদন জমা দেওয়া যায়নি। আবার চেষ্টা করুন।' }, { status: 500 }) }
 }

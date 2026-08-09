@@ -30,9 +30,6 @@ export async function GET(request: NextRequest) {
     const configuredOrigin = process.env.BETTER_AUTH_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
     const origin = configuredOrigin ? (configuredOrigin.startsWith('http') ? configuredOrigin : `https://${configuredOrigin}`) : request.nextUrl.origin
     const baseUrl = origin.replace(/\/$/, '')
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(?::\d+)?$/i.test(baseUrl)) {
-      return NextResponse.json({ error: 'ডাউনলোড লিংক তৈরির জন্য অ্যাপটি একটি ডিপ্লয়ড HTTPS ডোমেইনে চালাতে হবে। লোকালহোস্ট লিংক Excel-এ নিরাপদে কাজ করবে না।' }, { status: 409 })
-    }
     for (const row of rows) {
       const excelRow = sheet.addRow({ id: row.id, name: row.name, phone: row.phone, email: row.email || '', college: row.college, garden: row.garden, guardianJob: row.guardianJob, gpa: Number(row.gpa), department: row.department, books: row.books.join(', '), createdAt: row.createdAt.toLocaleString('bn-BD') })
       excelRow.height = 110
