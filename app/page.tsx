@@ -33,6 +33,25 @@ const books: Record<Department, string[]> = {
 }
 
 const deptLabels: Record<Department, string> = { science: 'বিজ্ঞান বিভাগ', arts: 'মানবিক বিভাগ', commerce: 'ব্যবসায় শিক্ষা বিভাগ' }
+const nctbBooks = new Set(['বাংলা ১ম পত্র', 'বাংলা ২য় পত্র', 'ইংরেজি ১ম পত্র', 'ইংরেজি ২য় পত্র', 'তথ্য ও যোগাযোগ প্রযুক্তি'])
+const writersByBook: Record<string, string> = {
+  'বাংলা ১ম পত্র': 'NCTB', 'বাংলা ২য় পত্র': 'হায়াৎ সাইফ', 'ইংরেজি ১ম পত্র': 'M. A. Hamid', 'ইংরেজি ২য় পত্র': 'M. A. Hamid', 'তথ্য ও যোগাযোগ প্রযুক্তি': 'মো. আব্দুর রহমান', 'পদার্থবিজ্ঞান ১ম পত্র': 'এস. আর. খান', 'পদার্থবিজ্ঞান ২য় পত্র': 'এস. আর. খান', 'রসায়ন ১ম পত্র': 'হাজারী ও নাগ', 'রসায়ন ২য় পত্র': 'হাজারী ও নাগ', 'জীববিজ্ঞান ১ম পত্র': 'আবুল হাসান', 'জীববিজ্ঞান ২য় পত্র': 'আবুল হাসান', 'উচ্চতর গণিত ১ম পত্র': 'কে. বি. শাহ', 'উচ্চতর গণিত ২য় পত্র': 'কে. বি. শাহ', 'ইতিহাস ১ম পত্র': 'এ. কে. এম. শাহনাওয়াজ', 'ইতিহাস ২য় পত্র': 'এ. কে. এম. শাহনাওয়াজ', 'পৌরনীতি ও সুশাসন ১ম পত্র': 'মো. মোজাম্মেল হক', 'পৌরনীতি ও সুশাসন ২য় পত্র': 'মো. মোজাম্মেল হক', 'অর্থনীতি ১ম পত্র': 'ড. মো. শামসুল আলম', 'অর্থনীতি ২য় পত্র': 'ড. মো. শামসুল আলম', 'ভূগোল ১ম পত্র': 'ড. হুমায়ুন কবির', 'ভূগোল ২য় পত্র': 'ড. হুমায়ুন কবির', 'সমাজকর্ম ১ম পত্র': 'মো. শহীদুজ্জামান', 'যুক্তিবিদ্যা ১ম পত্র': 'ড. মো. আবদুর রাজ্জাক', 'হিসাববিজ্ঞান ১ম পত্র': 'মো. জাকির হোসেন', 'হিসাববিজ্ঞান ২য় পত্র': 'মো. জাকির হোসেন', 'ব্যবসায় সংগঠন ও ব্যবস্থাপনা ১ম পত্র': 'মো. সাইফুল ইসলাম', 'ব্যবসায় সংগঠন ও ব্যবস্থাপনা ২য় পত্র': 'মো. সাইফুল ইসলাম', 'ফিনান্স, ব্যাংকিং ও বিমা ১ম পত্র': 'মো. আবদুল্লাহ আল মামুন', 'ফিনান্স, ব্যাংকিং ও বিমা ২য় পত্র': 'মো. আবদুল্লাহ আল মামুন', 'উৎপাদন ব্যবস্থাপনা ও বিপণন ১ম পত্র': 'মো. জাহাঙ্গীর আলম'
+}
+const publisherOptions: Record<string, string[]> = {
+  'পদার্থবিজ্ঞান ১ম পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'], 'পদার্থবিজ্ঞান ২য় পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'],
+  'রসায়ন ১ম পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'], 'রসায়ন ২য় পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'],
+  'জীববিজ্ঞান ১ম পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'], 'জীববিজ্ঞান ২য় পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'],
+  'উচ্চতর গণিত ১ম পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'], 'উচ্চতর গণিত ২য় পত্র': ['রয়েল', 'লেকচার', 'পাঞ্জেরী'],
+  'ইতিহাস ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'ইতিহাস ২য় পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'পৌরনীতি ও সুশাসন ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'পৌরনীতি ও সুশাসন ২য় পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'অর্থনীতি ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'অর্থনীতি ২য় পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'ভূগোল ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'ভূগোল ২য় পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'সমাজকর্ম ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'যুক্তিবিদ্যা ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'হিসাববিজ্ঞান ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'হিসাববিজ্ঞান ২য় পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'ব্যবসায় সংগঠন ও ব্যবস্থাপনা ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'ব্যবসায় সংগঠন ও ব্যবস্থাপনা ২য় পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'ফিনান্স, ব্যাংকিং ও বিমা ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'], 'ফিনান্স, ব্যাংকিং ও বিমা ২য় পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র'],
+  'উৎপাদন ব্যবস্থাপনা ও বিপণন ১ম পত্র': ['লেকচার', 'পাঞ্জেরী', 'অক্ষরপত্র']
+}
 const bn = (value: number) => String(value).replace(/[0-9]/g, (n) => '০১২৩৪৫৬৭৮৯'[Number(n)])
 
 function FilePicker({ label, value, error, onChange }: { label: string; value: FileState; error?: string; onChange: (file: FileState) => void }) {
@@ -62,7 +81,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true)
   const [dept, setDept] = useState<Department | ''>('')
   const [selected, setSelected] = useState<string[]>([])
-  const [writers, setWriters] = useState<Record<string, string>>({})
+  const [customWriters, setCustomWriters] = useState<Record<string, string>>({})
   const [files, setFiles] = useState<{ marksheet: FileState; proof: FileState }>({ marksheet: null, proof: null })
   const [submitted, setSubmitted] = useState<Application | null>(null)
   const [error, setError] = useState('')
@@ -98,7 +117,7 @@ export default function Page() {
       const response = await fetch(url, { headers: { 'x-admin-pass': 'lonewolf2026' }, cache: 'no-store' })
       if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'ফাইলটি খোলা যায়নি'); return }
       const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); window.open(objectUrl, '_blank', 'noopener,noreferrer'); window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
-    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') } finally { setAdminAction('') }
+    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায���নি') } finally { setAdminAction('') }
   }
 
   const unlockAdmin = async () => {
@@ -140,7 +159,7 @@ export default function Page() {
     setError(''); setSubmitting(true)
     try {
       const payload = new FormData(); for (const [key, value] of data.entries()) payload.append(key, value)
-      payload.set('department', dept); payload.set('books', JSON.stringify(selected)); payload.set('bookWriters', JSON.stringify(Object.fromEntries(selected.map((book) => [book, writers[book] || '']))))
+      payload.set('department', dept); payload.set('books', JSON.stringify(selected)); payload.set('bookWriters', JSON.stringify(Object.fromEntries(selected.filter((book) => !nctbBooks.has(book)).map((book) => [book, customWriters[book] || '']))))
       if (files.marksheet?.dataUrl) payload.set('marksheet', await (await fetch(files.marksheet.dataUrl)).blob(), files.marksheet.name)
       if (files.proof?.dataUrl) payload.set('proof', await (await fetch(files.proof.dataUrl)).blob(), files.proof.name)
       const response = await fetch('/api/applications', { method: 'POST', body: payload }); const result = await readResponse(response)
@@ -148,7 +167,7 @@ export default function Page() {
       setSubmitted(result.application); setApplications((current) => [result.application, ...current])
     } catch { setError('সার্ভারের সাথে যোগাযোগ করা যায়নি। ই��্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন') } finally { setSubmitting(false) }
   }
-  const reset = () => { setSubmitted(null); setDept(''); setSelected([]); setWriters({}); setFiles({ marksheet: null, proof: null }); setError(''); setFieldErrors({}) }
+  const reset = () => { setSubmitted(null); setDept(''); setSelected([]); setCustomWriters({}); setFiles({ marksheet: null, proof: null }); setError(''); setFieldErrors({}) }
 
   return <main>
     {loading && <div className="page-loader" role="status" aria-label="লোড হচ্ছে"><div className="loader-leaf" aria-hidden="true"><Leaf size={34} strokeWidth={1.7} /></div></div>}
@@ -168,8 +187,8 @@ export default function Page() {
           {error && <div className="err-box" role="alert" aria-live="assertive">{error}{Object.entries(fieldErrors).length > 0 && <ul>{Object.values(fieldErrors).map((message) => <li key={message}>{message}</li>)}</ul>}</div>}
           <input type="hidden" name="department" value={dept} />
           <section className="section"><SectionHead num="১" title="ব্যক্তিগত তথ্য" /><div className="field"><label>আবেদনকারীর নাম <span className="req">*</span></label><input name="name" placeholder="পূর্ণ নাম লিখুন" /></div><div className="grid2"><div className="field"><label>আবেদনকারীর মোবাইল নাম্বার <span className="req">*</span></label><input name="phone" type="tel" placeholder="01XXXXXXXXX" /><div className="hint">১১ ডিজিটের সচল নম্বর দিন</div></div><div className="field"><label>আবেদনকারী কোন চা-বাগানের অধিবাসী? <span className="req">*</span></label><input name="garden" placeholder="চা-বাগানের নাম" /></div></div><div className="field"><label>আবেদনকারীর অভিভাবকের পেশা <span className="req">*</span></label><input name="guardianJob" placeholder="যেমনঃ চা-শ্রমিক, দিনমজুর ইত্যাদি" /></div></section>
-          <section className="section"><SectionHead num="২" title="শিক্ষা সংক্রান্ত তথ্য" /><div className="field"><label>আবেদনকারীর কলেজের নাম <span className="req">*</span></label><input name="college" placeholder="কলেজের পূর্ণ নাম" /></div><div className="grid2"><div className="field"><label>আবেদনকারী কলেজে কোন বিভাগে অধ্যয়নরত? <span className="req">*</span></label><select value={dept} onChange={(e) => { setDept(e.target.value as Department); setSelected([]) }}><option value="">বিভাগ নির্বাচন করুন</option><option value="science">বিজ্ঞান বিভাগ</option><option value="arts">মানবিক বিভাগ</option><option value="commerce">ব্যবসায় শিক্ষা বিভাগ</option></select></div><div className="field"><label>SSC পরীক্ষার ফলাফল (GPA) <span className="req">*</span></label><input name="gpa" type="number" min="1" max="5" step=".01" placeholder="যেমনঃ 4.50" /></div></div></section>
-          <section className="section"><SectionHead num="৩" title="বই নির্বাচন" /><p className="section-sub">তোমার বিভাগের সিলেবাস অনুযায়ী তালিকা থেকে সর্বোচ্চ ১০টি বই বেছে নাও</p>{!dept ? <div className="dept-empty">প্রথমে উপরে থেকে তোমার বিভাগ নির্বাচন করো — তারপর এখানে বইয়ের তালিকা দেখা যাবে।</div> : <><div className="book-progress"><div className="book-progress-track"><div className="book-progress-fill" style={{ width: `${selected.length * 10}%` }} /></div><span>{bn(selected.length)} / ১০ নির্বাচিত</span></div><div className="book-grid">{books[dept].map((book) => <div key={book} className={`book-item ${selected.includes(book) ? 'checked' : ''} ${!selected.includes(book) && selected.length >= 10 ? 'disabled' : ''}`}><label><input type="checkbox" checked={selected.includes(book)} onChange={() => toggleBook(book)} /><span>{book}</span></label>{selected.includes(book) && <input className="writer-input" value={writers[book] || ''} onChange={(event) => setWriters((value) => ({ ...value, [book]: event.target.value }))} placeholder="লেখকের নাম (ঐচ্ছিক)" aria-label={`${book} লেখকের নাম`} />}</div>)}</div></>}</section>
+          <section className="section"><SectionHead num="২" title="শিক্ষা সংক্রান্ত তথ্য" /><div className="field"><label>আবেদনকারীর কলেজের নাম <span className="req">*</span></label><input name="college" placeholder="কলেজের পূর্ণ ন���ম" /></div><div className="grid2"><div className="field"><label>আবেদনকারী কলেজে কোন বিভাগে অধ্যয়নরত? <span className="req">*</span></label><select value={dept} onChange={(e) => { setDept(e.target.value as Department); setSelected([]) }}><option value="">বিভাগ নির্বাচন করুন</option><option value="science">বিজ্ঞান বিভাগ</option><option value="arts">মানবিক বিভাগ</option><option value="commerce">ব্যবসায় শিক্ষা বিভাগ</option></select></div><div className="field"><label>SSC পরীক্ষার ফলাফল (GPA) <span className="req">*</span></label><input name="gpa" type="number" min="1" max="5" step=".01" placeholder="যেমনঃ 4.50" /></div></div></section>
+          <section className="section"><SectionHead num="৩" title="বই নির্বাচন" /><p className="section-sub">তোমার বিভাগের সিলেবাস অনুযায়ী তালিকা থেকে সর্বোচ্চ ১০টি বই বেছে নাও</p>{!dept ? <div className="dept-empty">প্রথমে উপরে থেকে তোমার বিভাগ নির্বাচন করো — তারপর এখানে বইয়ের তালিকা দেখা যাবে।</div> : <><div className="book-progress"><div className="book-progress-track"><div className="book-progress-fill" style={{ width: `${selected.length * 10}%` }} /></div><span>{bn(selected.length)} / ১০ নির্বাচিত</span></div><div className="book-grid">{books[dept].map((book) => <div key={book} className={`book-item ${selected.includes(book) ? 'checked' : ''} ${!selected.includes(book) && selected.length >= 10 ? 'disabled' : ''}`}><label><input type="checkbox" checked={selected.includes(book)} onChange={() => toggleBook(book)} /><span><b>{book}</b></span></label>{selected.includes(book) && !nctbBooks.has(book) && <input className="writer-input" value={customWriters[book] || ''} onChange={(event) => setCustomWriters((value) => ({ ...value, [book]: event.target.value }))} placeholder="লেখক বা প্রকাশনীর নাম লিখুন" aria-label={`${book} লেখক বা প্রকাশনীর নাম`} />}</div>)}</div></>}</section>
           <section className="section"><SectionHead num="৪" title="প্রয়োজনীয় কাগজপত্র" /><FilePicker label="নিজের SSC পরীক্ষার মার্কশীট আপলোড করো" value={files.marksheet} error={fieldErrors.marksheet} onChange={(value) => setFiles((current) => ({ ...current, marksheet: value }))} /><FilePicker label="অভিভাবকের পেশার প্রমাণপত্র / চা-বাগানের অধিবাসী প্রত্যয়নপত্র আপলোড করো" value={files.proof} error={fieldErrors.proof} onChange={(value) => setFiles((current) => ({ ...current, proof: value }))} /></section>
           <div className="submit-row"><button type="submit" className="primary" disabled={submitting}>{submitting ? <><span className="submit-spinner" aria-hidden="true" /> আবেদন প্রক্রিয়াধীন...</> : 'আবেদন জমা দাও'}</button><span>{submitting ? 'তথ্য ও ফাইল নিরাপদে সংরক্ষণ করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন...' : 'জমা দেওয়ার পর একটি রেফারেন্স নম্বর পাবে'}</span></div>
         </form>}

@@ -1,10 +1,10 @@
 import { getBlob } from '@/lib/blob'
 import { getApplication } from '@/lib/db'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { PDFDocument, rgb } from 'pdf-lib'
 import { Resvg } from '@resvg/resvg-js'
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 
 const ADMIN_PASS = 'lonewolf2026'
 export const runtime = 'nodejs'
@@ -14,7 +14,7 @@ function wrap(value: string, width = 62) { const words = value.split(/\s+/); con
 function text(value: unknown) { return String(value ?? '').replace(/[\r\n]+/g, ' ').trim() }
 
 async function svgText(body: string, fontData: Buffer) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1500"><defs><style>@font-face{font-family:BN;src:url(data:font/ttf;base64,${fontData.toString('base64')})}text{font-family:BN,sans-serif}</style></defs>${body}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1500"><defs><style>@font-face{font-family:NotoBengali;src:url(data:font/woff;base64,${fontData.toString('base64')})}text{font-family:NotoBengali,Arial,sans-serif}</style></defs>${body}</svg>`
   return Buffer.from(new Resvg(svg, { fitTo: { mode: 'width', value: 1100 } }).render().asPng())
 }
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (request.headers.get('x-admin-pass') !== ADMIN_PASS && request.nextUrl.searchParams.get('pass') !== ADMIN_PASS) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { id } = await params; const row = await getApplication(id); if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const fontData = await fs.readFile(path.join(process.cwd(), 'public/fonts/NotoSansBengali.ttf'))
+    const fontData = await fs.readFile(path.join(process.cwd(), 'node_modules/@fontsource/noto-sans-bengali/files/noto-sans-bengali-bengali-400-normal.woff'))
     const pdf = await PDFDocument.create(); const green = rgb(0.10, 0.35, 0.25); const cream = rgb(0.97, 0.95, 0.89)
     const marksheet = await getImage(row.marksheetPath); const proof = await getImage(row.proofPath)
     const lines: string[] = []; const add = (label: string, value: string) => { lines.push(`<text x="80" y="${300 + lines.length * 62}" font-size="28" fill="#61766d">${esc(label)}:</text><text x="350" y="${300 + lines.length * 62}" font-size="30" fill="#17382b">${esc(value || 'দেওয়া হয়নি')}</text>`) }
