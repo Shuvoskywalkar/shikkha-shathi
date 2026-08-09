@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
       const excelRow = sheet.addRow({ id: row.id, name: row.name, phone: row.phone, email: row.email || '', college: row.college, garden: row.garden, guardianJob: row.guardianJob, gpa: Number(row.gpa), department: row.department, books: row.books.join(', '), createdAt: row.createdAt.toLocaleString('bn-BD') })
       excelRow.height = 110
       const rowNumber = excelRow.number
-      const origin = request.nextUrl.origin
+      const configuredOrigin = process.env.BETTER_AUTH_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
+      const origin = configuredOrigin ? (configuredOrigin.startsWith('http') ? configuredOrigin : `https://${configuredOrigin}`) : request.nextUrl.origin
       const marksheetUrl = row.marksheetPath ? `${origin}/api/applications/${row.id}/files/marksheet?pass=${ADMIN_PASS}` : ''
       const proofUrl = row.proofPath ? `${origin}/api/applications/${row.id}/files/proof?pass=${ADMIN_PASS}` : ''
       const pdfUrl = `${origin}/api/applications/${row.id}/pdf?pass=${ADMIN_PASS}`

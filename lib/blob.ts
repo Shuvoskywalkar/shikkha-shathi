@@ -47,7 +47,7 @@ export async function getBlob(pathname: string, opts: { access: 'private' }): Pr
     const buffer = Buffer.from(await new Response(result.stream).arrayBuffer())
     return {
       pathname,
-      stream: result.stream as any,
+      stream: Readable.from(buffer),
       buffer,
       contentType: result.blob.contentType || defaultContentType,
     }

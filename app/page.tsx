@@ -79,6 +79,25 @@ export default function Page() {
     return { error: message || `সার্ভার ত্রুটি (${response.status})` }
   }
 
+  const downloadAdminFile = async (url: string, filename: string) => {
+    setAdminError('')
+    try {
+      const response = await fetch(url, { headers: { 'x-admin-pass': 'lonewolf2026' }, cache: 'no-store' })
+      if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'ফাইলটি ডাউনলোড করা যায়নি'); return }
+      const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); const link = document.createElement('a')
+      link.href = objectUrl; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') }
+  }
+
+  const openAdminFile = async (url: string, filename: string) => {
+    setAdminError('')
+    try {
+      const response = await fetch(url, { headers: { 'x-admin-pass': 'lonewolf2026' }, cache: 'no-store' })
+      if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'ফাইলটি খোলা যায়নি'); return }
+      const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); window.open(objectUrl, '_blank', 'noopener,noreferrer'); window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
+    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') }
+  }
+
   const unlockAdmin = async () => {
     const pass = (document.getElementById('admin-pass') as HTMLInputElement)?.value.trim()
     setAdminError('')
@@ -134,7 +153,7 @@ export default function Page() {
       <div className="hero-inner">
         <div className="eyebrow">আয়োজনে: চা-বাগানের বিশ্ববিদ্যালয় পড়ুয়া শিক্ষার্থীরা</div>
         <h1 className="hero-title">চা-বাগানের সুবিধাবঞ্চিত উচ্চ-মাধ্যমিক শিক্ষার্থীদের জন্য বিনামূল্যে শিক্ষা-উপকরণ সহায়তা কর্মসূচি ২০২৬</h1>
-        <p className="hero-description">এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? তথ্য যাচাই ও বাছাই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে। আমাদের লক্ষ্য ৫০ জন শিক্ষার্থীকে এই কর্মসূচির আওতায় সহযোগিতা করা।</p>
+        <p className="hero-description">এসএসসি পাশ করে একাদশ শ্রেণিতে ভর্তি হতে যাচ্ছ? তথ্য যাচাই ও বাছ��ই করে সবচেয়ে যোগ্য কয়েকজনকে বই, ক্যালকুলেটর ও জ্যামিতি বক্স কিনে দেওয়া হবে। আমাদের লক্ষ্য ৫০ জন শিক্ষার্থীকে এই কর্মসূচির আওতায় সহযোগিতা করা।</p>
       </div>
       {showScrollButton && <button className="scroll-indicator" aria-label="ফর্মে যান" onClick={() => { document.getElementById('form-card')?.scrollIntoView({ behavior: 'smooth' }); setShowScrollButton(false) }}><ArrowDown size={24} /></button>}
     </section>
@@ -155,7 +174,7 @@ export default function Page() {
 
       <section className="card contact-card"><h2>যোগাযোগ</h2><div className="contact-list">{[['সাগর বৈদ্য', 'সিলেট ইন্টারন্যাশনাল ইউনিভার্সিটি', '০১৭৭৯-৮২৯৮৫০'], ['গোপাল কালোয়ার', 'মৌলভীবাজার সরকারি কলেজ', '০১৭৬৫-৪২৮৩৮৭'], ['আকাশ নায়েক', 'শ্রীমঙ্গল সরকারি কলেজ', '০১৩২৭-৭৫৬৪৯৫'], ['রুহিত বোনার্জি', 'ইনস্টিটিউট অফ হেলথ টেকনোলজি', '০১৫৮০-৬৮৪৫৮১']].map(([name, org, phone]) => <div className="contact-item" key={name}><b>{name}</b><small>{org}</small><a href={`tel:${phone.replace(/[^0-9]/g, '')}`}><Phone size={15} />{phone}</a></div>)}</div></section>
       <footer><button className="admin-link" aria-label="প্রশাসন প্যানেল" onClick={() => setShowAdmin((value) => !value)}><LockKeyhole size={16} /></button></footer>
-      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={unlockAdmin}>প্রবেশ করুন</button>{adminError && <div className="err-box" role="alert">{adminError}</div>}</div> : <div><div className="admin-heading"><h2>আবেদনসমূহ ({applications.length})</h2><button className="export-btn" onClick={async () => { const response = await fetch('/api/applications/export', { headers: { 'x-admin-pass': 'lonewolf2026' } }); if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'Excel তৈরি করা যায়নি'); return } const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'tea-garden-applications.xlsx'; link.click(); URL.revokeObjectURL(url) }}>সব আবেদন Excel</button></div>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />অভিভাবকের পেশা: {app.guardianJob}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}<br />মার্কশীট: {app.marksheet?.name || 'নেই'}<br />প্রমাণপত্র: {app.proof?.name || 'নেই'}</p><div className="document-links"><a href={`/api/applications/${app.id}/files/marksheet?pass=lonewolf2026`} target="_blank" rel="noreferrer">মার্কশীট দেখুন</a><a href={`/api/applications/${app.id}/files/proof?pass=lonewolf2026`} target="_blank" rel="noreferrer">প্রমাণপত্র দেখুন</a><a href={`/api/applications/${app.id}/pdf?pass=lonewolf2026`} download={`${app.id}.pdf`}>PDF ডাউনলোড</a></div></details>)}</div>}</section>}
+      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={unlockAdmin}>প্রবেশ করুন</button>{adminError && <div className="err-box" role="alert">{adminError}</div>}</div> : <div><div className="admin-heading"><h2>আবেদনসমূহ ({applications.length})</h2><button className="export-btn" onClick={async () => { const response = await fetch('/api/applications/export', { headers: { 'x-admin-pass': 'lonewolf2026' } }); if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'Excel তৈরি করা যায়নি'); return } const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'tea-garden-applications.xlsx'; link.click(); URL.revokeObjectURL(url) }}>সব আবেদন Excel</button></div>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />অভিভাবকের পেশা: {app.guardianJob}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}<br />মার্কশীট: {app.marksheet?.name || 'নেই'}<br />প্রমাণপত্র: {app.proof?.name || 'নেই'}</p><div className="document-links"><button type="button" onClick={() => openAdminFile(`/api/applications/${app.id}/files/marksheet`, `${app.id}-marksheet`)}>মার্কশীট দেখুন</button><button type="button" onClick={() => openAdminFile(`/api/applications/${app.id}/files/proof`, `${app.id}-proof`)}>প্রমাণপত্র দেখুন</button><button type="button" onClick={() => downloadAdminFile(`/api/applications/${app.id}/pdf`, `${app.id}.pdf`)}>PDF ডাউনলোড</button></div></details>)}</div>}</section>}
     </div>
   </main>
 }
