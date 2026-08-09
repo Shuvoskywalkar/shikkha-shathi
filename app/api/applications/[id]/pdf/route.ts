@@ -1,6 +1,7 @@
 import { getBlob } from '@/lib/blob'
 import { getApplication } from '@/lib/db'
-import PDFDocument from 'pdfkit'
+import { PDFDocument, rgb } from 'pdf-lib'
+import fontkit from '@pdf-lib/fontkit'
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -10,12 +11,14 @@ export const runtime = 'nodejs'
 
 async function getImage(pathname: string | null) {
   if (!pathname) return null
-  const blob = await getBlob(pathname, { access: 'private' })
-  return blob?.buffer || null
+  const result = await getBlob(pathname, { access: 'private' })
+  return result?.buffer || null
 }
 
-function safeText(value: unknown) {
-  return String(value ?? '').replace(/[\r\n]+/g, ' ').trim()
+function text(value: unknown) { return String(value ?? '').replace(/[\r\n]+/g, ' ').trim() }
+function drawLine(page: any, font: any, label: string, value: string, y: number) {
+  page.drawText(label, { x: 54, y, size: 10, font, color: rgb(0.38, 0.46, 0.42) })
+  page.drawText(value || 'দেওয়া হয়নি', { x: 178, y, size: 11, font, color: rgb(0.09, 0.22, 0.17), maxWidth: 355 })
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -26,48 +29,42 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const row = await getApplication(id)
     if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-    const fontPath = path.join(process.cwd(), 'public/fonts/NotoSansBengali.ttf')
-    await fs.access(fontPath)
-    const font = await fs.readFile(fontPath)
+    const fontBytes = await fs.readFile(path.join(process.cwd(), 'public/fonts/NotoSansBengali.ttf'))
+    const pdf = await PDFDocument.create()
+    pdf.registerFontkit(fontkit)
+    const font = await pdf.embedFont(fontBytes, { subset: false })
     const marksheet = await getImage(row.marksheetPath)
     const proof = await getImage(row.proofPath)
-    const doc = new PDFDocument({ size: 'A4', margin: 46, autoFirstPage: false, info: { Title: `আবেদন ${id}`, Author: 'Tea Garden Education Support' } })
-    const chunks: Buffer[] = []
-    doc.on('data', (chunk) => chunks.push(chunk))
-    const finished = new Promise<Buffer>((resolve, reject) => { doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject) })
-    const green = '#19583f'; const ink = '#17382d'; const muted = '#66766f'; const cream = '#f5f1e5'
-    const addHeader = (label: string) => {
-      doc.rect(0, 0, 595, 92).fill(green)
-      doc.font(font).fontSize(21).fillColor('#ffffff').text('চা-বাগান শিক্ষা সহায়তা', 46, 25)
-      doc.fontSize(10).fillColor('#dbe9df').text(label, 46, 57)
-      doc.fillColor(ink)
+    const green = rgb(0.10, 0.35, 0.25); const cream = rgb(0.97, 0.95, 0.89); const ink = rgb(0.09, 0.22, 0.17); const muted = rgb(0.38, 0.46, 0.42)
+    const page = pdf.addPage([595, 842])
+    page.drawRectangle({ x: 0, y: 742, width: 595, height: 100, color: green })
+    page.drawText('চা-বাগান শিক্ষা সহায়তা', { x: 42, y: 790, size: 22, font, color: rgb(1, 1, 1) })
+    page.drawText('শিক্ষার্থী আবেদনপত্র · পূর্ণাঙ্গ প্রতিবেদন', { x: 42, y: 766, size: 11, font, color: cream })
+    page.drawText(text(row.name), { x: 42, y: 700, size: 20, font, color: ink })
+    page.drawText(`রেফারেন্স: ${id}`, { x: 42, y: 678, size: 10, font, color: muted })
+    page.drawText(`জমা: ${row.createdAt.toLocaleString('bn-BD', { dateStyle: 'medium', timeStyle: 'short' })}`, { x: 300, y: 678, size: 10, font, color: muted })
+    page.drawRectangle({ x: 34, y: 220, width: 527, height: 420, color: rgb(0.97, 0.98, 0.97), borderColor: rgb(0.82, 0.88, 0.84), borderWidth: 1 })
+    const fields: [string, string][] = [['মোবাইল', text(row.phone)], ['ইমেইল', text(row.email)], ['কলেজ', text(row.college)], ['চা-বাগান', text(row.garden)], ['অভিভাবকের পেশা', text(row.guardianJob)], ['GPA', text(row.gpa)], ['বিভাগ', text(row.department)], ['নির্বাচিত বই', row.books.map(text).join(', ')]]
+    fields.forEach(([label, value], index) => drawLine(page, font, `${label}:`, value, 602 - index * 43))
+    page.drawText('সংযুক্ত নথি', { x: 42, y: 178, size: 14, font, color: ink })
+    page.drawText(`${marksheet ? 'মার্কশীট সংযুক্ত আছে' : 'মার্কশীট পাওয়া যায়নি'} · ${proof ? 'প্রমাণপত্র সংযুক্ত আছে' : 'প্রমাণপত্র পাওয়া যায়নি'}`, { x: 42, y: 154, size: 10, font, color: muted })
+    const addImagePage = async (title: string, buffer: Buffer | null) => {
+      if (!buffer) return
+      const imagePage = pdf.addPage([595, 842])
+      imagePage.drawRectangle({ x: 0, y: 742, width: 595, height: 100, color: green })
+      imagePage.drawText('চা-বাগান শিক্ষা সহায়তা', { x: 42, y: 790, size: 22, font, color: rgb(1, 1, 1) })
+      imagePage.drawText(title, { x: 42, y: 766, size: 11, font, color: cream })
+      const image = buffer[0] === 0xff && buffer[1] === 0xd8 ? await pdf.embedJpg(buffer) : await pdf.embedPng(buffer)
+      const scale = Math.min(480 / image.width, 600 / image.height, 1)
+      imagePage.drawImage(image, { x: (595 - image.width * scale) / 2, y: 115, width: image.width * scale, height: image.height * scale })
     }
-    const field = (label: string, value: string) => {
-      const y = doc.y
-      doc.roundedRect(46, y, 503, 42, 6).fill('#f7faf7')
-      doc.font(font).fontSize(9).fillColor(muted).text(label, 60, y + 8)
-      doc.font(font).fontSize(12).fillColor(ink).text(value || 'দেওয়া হয়নি', 60, y + 22, { width: 475, lineBreak: false })
-      doc.y = y + 52
-    }
-    doc.addPage(); addHeader('শিক্ষার্থী আবেদনপত্র · পূর্ণাঙ্গ প্রতিবেদন')
-    doc.font(font).fontSize(10).fillColor(muted).text(`রেফারেন্স: ${id}`, 46, 116)
-    doc.font(font).fontSize(16).fillColor(ink).text(safeText(row.name), 46, 140)
-    doc.font(font).fontSize(10).fillColor(muted).text(`জমা: ${row.createdAt.toLocaleString('bn-BD', { dateStyle: 'medium', timeStyle: 'short' })}`, 46, 164)
-    doc.y = 198
-    field('মোবাইল', safeText(row.phone)); field('ইমেইল', safeText(row.email) || 'দেওয়া হয়নি'); field('কলেজ', safeText(row.college)); field('চা-বাগান', safeText(row.garden)); field('অভিভাবকের পেশা', safeText(row.guardianJob)); field('GPA', safeText(row.gpa)); field('বিভাগ', safeText(row.department)); field('নির্বাচিত বই', row.books.map(safeText).join(', '))
-    const addImagePage = (title: string, image: Buffer | null) => {
-      if (!image) return
-      doc.addPage(); addHeader(title)
-      doc.font(font).fontSize(15).fillColor(ink).text(title, 46, 120)
-      doc.image(image, 65, 160, { fit: [465, 600], align: 'center', valign: 'center' })
-    }
-    addImagePage('মার্কশীট', marksheet); addImagePage('অভিভাবকের প্রমাণপত্র', proof)
-    doc.bufferPages(); const range = doc.bufferedPageRange(); for (let index = range.start; index < range.start + range.count; index += 1) { doc.switchToPage(index); doc.font(font).fontSize(8).fillColor(muted).text(`Tea Garden Education Support  ·  ${index + 1}/${range.count}`, 46, 806, { align: 'center', width: 503 }) }
-    doc.end()
-    const output = await finished
+    await addImagePage('মার্কশীট', marksheet)
+    await addImagePage('অভিভাবকের প্রমাণপত্র', proof)
+    const pages = pdf.getPages()
+    pages.forEach((item, index) => item.drawText(`Tea Garden Education Support · ${index + 1}/${pages.length}`, { x: 42, y: 32, size: 8, font, color: muted }))
+    const output = await pdf.save()
     const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '') || 'application'
-    return new NextResponse(new Uint8Array(output), { headers: { 'Content-Type': 'application/pdf', 'Content-Length': String(output.length), 'Content-Disposition': `attachment; filename="${safeId}.pdf"`, 'Cache-Control': 'no-store' } })
+    return new NextResponse(output, { headers: { 'Content-Type': 'application/pdf', 'Content-Length': String(output.length), 'Content-Disposition': `attachment; filename="${safeId}.pdf"`, 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[v0] PDF generation failed', error)
     return NextResponse.json({ error: 'PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।' }, { status: 500 })
