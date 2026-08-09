@@ -71,6 +71,7 @@ export default function Page() {
   const [showScrollButton, setShowScrollButton] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [adminError, setAdminError] = useState('')
+  const [adminAction, setAdminAction] = useState('')
 
   const readResponse = async (response: Response) => {
     const contentType = response.headers.get('content-type') || ''
@@ -80,34 +81,34 @@ export default function Page() {
   }
 
   const downloadAdminFile = async (url: string, filename: string) => {
-    setAdminError('')
+    setAdminError(''); setAdminAction('ফাইল প্রস্তুত করা হচ্ছে...')
     try {
       const response = await fetch(url, { headers: { 'x-admin-pass': 'lonewolf2026' }, cache: 'no-store' })
       if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'ফাইলটি ডাউনলোড করা যায়নি'); return }
       const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); const link = document.createElement('a')
       link.href = objectUrl; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') }
+    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') } finally { setAdminAction('') }
   }
 
   const openAdminFile = async (url: string, filename: string) => {
-    setAdminError('')
+    setAdminError(''); setAdminAction('ডকুমেন্ট খোলা হচ্ছে...')
     try {
       const response = await fetch(url, { headers: { 'x-admin-pass': 'lonewolf2026' }, cache: 'no-store' })
       if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'ফাইলটি খোলা যায়নি'); return }
       const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob); window.open(objectUrl, '_blank', 'noopener,noreferrer'); window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
-    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') }
+    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') } finally { setAdminAction('') }
   }
 
   const unlockAdmin = async () => {
     const pass = (document.getElementById('admin-pass') as HTMLInputElement)?.value.trim()
-    setAdminError('')
-    if (!pass) { setAdminError('পাসকোড লিখুন'); return }
+    setAdminError(''); setAdminAction('আবেদনসমূহ লোড হচ্ছে...')
+    if (!pass) { setAdminError('পাসকোড লিখুন'); setAdminAction(''); return }
     try {
       const response = await fetch('/api/applications', { headers: { 'x-admin-pass': pass }, cache: 'no-store' })
       const result = await readResponse(response)
       if (!response.ok) { setAdminError(result.error || 'পাসকোড সঠিক নয়'); return }
       setApplications(result.applications || []); setAdminUnlocked(true)
-    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') }
+    } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') } finally { setAdminAction('') }
   }
 
   useEffect(() => {
@@ -174,7 +175,7 @@ export default function Page() {
 
       <section className="card contact-card"><h2>যোগাযোগ</h2><div className="contact-list">{[['সাগর বৈদ্য', 'সিলেট ইন্টারন্যাশনাল ইউনিভার্সিটি', '০১৭৭৯-৮২৯৮৫০'], ['গোপাল কালোয়ার', 'মৌলভীবাজার সরকারি কলেজ', '০১৭৬৫-৪২৮৩৮৭'], ['আকাশ নায়েক', 'শ্রীমঙ্গল সরকারি কলেজ', '০১৩২৭-৭৫৬৪৯৫'], ['রুহিত বোনার্জি', 'ইনস্টিটিউট অফ হেলথ টেকনোলজি', '০১৫৮০-৬৮৪৫৮১']].map(([name, org, phone]) => <div className="contact-item" key={name}><b>{name}</b><small>{org}</small><a href={`tel:${phone.replace(/[^0-9]/g, '')}`}><Phone size={15} />{phone}</a></div>)}</div></section>
       <footer><button className="admin-link" aria-label="প্রশাসন প্যানেল" onClick={() => setShowAdmin((value) => !value)}><LockKeyhole size={16} /></button></footer>
-      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={unlockAdmin}>প্রবেশ করুন</button>{adminError && <div className="err-box" role="alert">{adminError}</div>}</div> : <div><div className="admin-heading"><h2>আবেদনসমূহ ({applications.length})</h2><button className="export-btn" onClick={async () => { const response = await fetch('/api/applications/export', { headers: { 'x-admin-pass': 'lonewolf2026' } }); if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'Excel তৈরি করা যায়নি'); return } const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'tea-garden-applications.xlsx'; link.click(); URL.revokeObjectURL(url) }}>সব আবেদন Excel</button></div>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />অভিভাবকের পেশা: {app.guardianJob}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}<br />মার্কশীট: {app.marksheet?.name || 'নেই'}<br />প্রমাণপত্র: {app.proof?.name || 'নেই'}</p><div className="document-links"><button type="button" onClick={() => openAdminFile(`/api/applications/${app.id}/files/marksheet`, `${app.id}-marksheet`)}>মার্কশীট দেখুন</button><button type="button" onClick={() => openAdminFile(`/api/applications/${app.id}/files/proof`, `${app.id}-proof`)}>প্রমাণপত্র দেখুন</button><button type="button" onClick={() => downloadAdminFile(`/api/applications/${app.id}/pdf`, `${app.id}.pdf`)}>PDF ডাউনলোড</button></div></details>)}</div>}</section>}
+      {showAdmin && <section className="card admin-panel">{!adminUnlocked ? <div className="admin-login"><h2>প্রশাসন প্যানেল</h2><input id="admin-pass" type="password" placeholder="পাসকোড দিন" /><button className="primary" onClick={unlockAdmin}>প্রবেশ করুন</button>{adminAction && <div className="admin-progress" role="status" aria-live="polite"><span className="submit-spinner" aria-hidden="true" />{adminAction}</div>}{adminError && <div className="err-box" role="alert">{adminError}</div>}</div> : <div><div className="admin-heading"><h2>আবেদনসমূহ ({applications.length})</h2>{adminAction && <div className="admin-progress" role="status" aria-live="polite"><span className="submit-spinner" aria-hidden="true" />{adminAction}</div>}<button className="export-btn" disabled={Boolean(adminAction)} onClick={async () => { setAdminError(''); setAdminAction('Excel তৈরি হচ্ছে...'); try { const response = await fetch('/api/applications/export', { headers: { 'x-admin-pass': 'lonewolf2026' }, cache: 'no-store' }); if (!response.ok) { const result = await readResponse(response); setAdminError(result.error || 'Excel তৈরি করা যায়নি'); return } const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'tea-garden-applications.xlsx'; document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000) } catch { setAdminError('সার্ভারের সাথে যোগাযোগ করা যায়নি') } finally { setAdminAction('') } }}>সব আবেদন Excel</button></div>{applications.length === 0 ? <p className="hint">এখনও কোনো আবেদন নেই।</p> : applications.map((app) => <details className="app-card" key={app.id}><summary>{app.name}<span>{deptLabels[app.dept]} · {new Date(app.submittedAt).toLocaleDateString('bn-BD')} <ChevronDown size={15} /></span></summary><p>ফোন: {app.phone}<br />কলেজ: {app.college}<br />চা-বাগান: {app.garden}<br />অভিভাবকের পেশা: {app.guardianJob}<br />GPA: {app.gpa}<br />বই: {app.books.join(', ')}<br />মার্কশীট: {app.marksheet?.name || 'নেই'}<br />প্রমাণপত্র: {app.proof?.name || 'নেই'}</p><div className="document-links"><button type="button" disabled={Boolean(adminAction)} onClick={() => openAdminFile(`/api/applications/${app.id}/files/marksheet`, `${app.id}-marksheet`)}>মার্কশীট দেখুন</button><button type="button" disabled={Boolean(adminAction)} onClick={() => openAdminFile(`/api/applications/${app.id}/files/proof`, `${app.id}-proof`)}>প্রমাণপত্র দেখুন</button><button type="button" disabled={Boolean(adminAction)} onClick={() => downloadAdminFile(`/api/applications/${app.id}/pdf`, `${app.id}.pdf`)}>PDF ডাউনলোড</button></div></details>)}</div>}</section>}
     </div>
   </main>
 }

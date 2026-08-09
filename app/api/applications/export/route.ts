@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       excelRow.height = 110
       const rowNumber = excelRow.number
       const configuredOrigin = process.env.BETTER_AUTH_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
-      const origin = configuredOrigin ? (configuredOrigin.startsWith('http') ? configuredOrigin : `https://${configuredOrigin}`) : request.nextUrl.origin
+      const origin = configuredOrigin ? (configuredOrigin.startsWith('http') ? configuredOrigin : `https://${configuredOrigin}`) : ''
       const marksheetUrl = row.marksheetPath ? `${origin}/api/applications/${row.id}/files/marksheet?pass=${ADMIN_PASS}` : ''
       const proofUrl = row.proofPath ? `${origin}/api/applications/${row.id}/files/proof?pass=${ADMIN_PASS}` : ''
       const pdfUrl = `${origin}/api/applications/${row.id}/pdf?pass=${ADMIN_PASS}`

@@ -1,7 +1,11 @@
 import { getBlob } from '@/lib/blob'
 import { NextRequest, NextResponse } from 'next/server'
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import { PDFDocument, rgb } from 'pdf-lib'
+import fontkit from '@pdf-lib/fontkit'
+import 'regenerator-runtime/runtime'
 import { getApplication } from '@/lib/db'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 
 const ADMIN_PASS = 'lonewolf2026'
 export const runtime = 'nodejs'
@@ -18,7 +22,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const row = await getApplication(id)
     if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const pdf = await PDFDocument.create(); const font = await pdf.embedFont(StandardFonts.Helvetica); const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
+    const pdf = await PDFDocument.create()
+    pdf.registerFontkit(fontkit)
+    const bengaliFont = await fs.readFile(path.join(process.cwd(), 'public/fonts/NotoSansBengali.ttf'))
+    const font = await pdf.embedFont(bengaliFont)
+    const bold = font
     let page = pdf.addPage([595, 842]); let y = 760
     page.drawRectangle({ x: 34, y: 718, width: 526, height: 96, color: rgb(0.12, 0.39, 0.24), borderColor: rgb(0.93, 0.88, 0.74), borderWidth: 1.5, borderRadius: 10 })
     page.drawText('Tea Garden Education Support', { x: 48, y: 784, size: 18, font: bold, color: rgb(1, 1, 1) })
