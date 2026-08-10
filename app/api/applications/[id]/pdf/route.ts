@@ -6,8 +6,8 @@ import path from 'node:path'
 import { PDFDocument, rgb } from 'pdf-lib'
 import { Resvg } from '@resvg/resvg-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/download-token'
 
-const ADMIN_PASS = 'lonewolf2026'
 export const runtime = 'nodejs'
 
 function text(value: unknown) { return String(value ?? '').replace(/[\r\n]+/g, ' ').trim() }
@@ -21,9 +21,10 @@ async function renderBengaliSvg(body: string, fontPath: string) {
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (request.headers.get('x-admin-pass') !== ADMIN_PASS && request.nextUrl.searchParams.get('pass') !== ADMIN_PASS) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { id } = await params
+  if (!isAdminRequest(request, request.nextUrl.searchParams.get('token'), id, 'pdf')) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
-    const { id } = await params; const row = await getApplication(id); if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const row = await getApplication(id); if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const fontPath = path.join(process.cwd(), 'public/fonts/NotoSansBengali.ttf')
     if (!await fs.stat(fontPath).then(() => true).catch(() => false)) throw new Error('Bengali font asset is missing')
     const pdf = await PDFDocument.create(); const green = '#1a5940'; const ink = '#17382b'; const muted = '#61766d'; const pale = '#f3f8f5'
