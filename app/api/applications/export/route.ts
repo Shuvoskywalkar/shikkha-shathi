@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
           const imageId = workbook.addImage({ buffer: image, extension })
           sheet.addImage(imageId, { tl: { col: column - 1 + 0.08, row: rowNumber - 1 + 0.08 }, ext: { width: 125, height: 95 } })
         }
-        sheet.getCell(rowNumber, column).value = { text: 'ফাইল খুলুন', hyperlink: url }
+        sheet.getCell(rowNumber, column).value = { text: column === 12 ? 'মার্কশীট দেখুন' : 'প্রমাণপত্র দেখুন', hyperlink: url }
         sheet.getCell(rowNumber, column).font = { color: { argb: 'FF0563C1' }, underline: 'single' }
       }
       sheet.getCell(rowNumber, 14).value = { text: 'PDF ডাউনলোড', hyperlink: pdfUrl }
