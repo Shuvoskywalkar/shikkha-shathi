@@ -24,7 +24,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (request.headers.get('x-admin-pass') !== ADMIN_PASS && request.nextUrl.searchParams.get('pass') !== ADMIN_PASS) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { id } = await params; const row = await getApplication(id); if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const fontPath = path.join(process.cwd(), 'node_modules/@fontsource/noto-sans-bengali/files/noto-sans-bengali-bengali-400-normal.woff')
+    const fontPath = path.join(process.cwd(), 'public/fonts/NotoSansBengali.ttf')
+    if (!await fs.stat(fontPath).then(() => true).catch(() => false)) throw new Error('Bengali font asset is missing')
     const pdf = await PDFDocument.create(); const green = '#1a5940'; const ink = '#17382b'; const muted = '#61766d'; const pale = '#f3f8f5'
     const marksheet = await getImage(row.marksheetPath); const proof = await getImage(row.proofPath)
     const writerText = row.books.map((book) => row.bookWriters?.[book] ? `${book} — ${row.bookWriters[book]}` : book).join(' · ')
