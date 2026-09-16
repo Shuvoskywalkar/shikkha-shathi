@@ -26,12 +26,15 @@ export async function POST(request: NextRequest) {
     let books: string[] = []; let bookWriters: Record<string, string> = {}; try { const parsed = JSON.parse(String(form.get('books') || '[]')); if (Array.isArray(parsed)) books = parsed.filter((book): book is string => typeof book === 'string' && book.trim()).map((book) => book.trim()) } catch { fieldError(fields, 'books', 'বইয়ের তালিকা সঠিক নয়') }
     if (books.length < 1 || books.length > 10) fieldError(fields, 'books', '১ থেকে ১০টি বই নির্বাচন করুন')
     try { const parsedWriters = JSON.parse(String(form.get('bookWriters') || '{}')); if (parsedWriters && typeof parsedWriters === 'object' && !Array.isArray(parsedWriters)) { bookWriters = Object.fromEntries(books.map((book) => [book, typeof parsedWriters[book] === 'string' ? parsedWriters[book].trim() : ''])); const calculator = typeof parsedWriters.__calculator === 'string' ? parsedWriters.__calculator : ''; const geometryBox = typeof parsedWriters.__geometryBox === 'string' ? parsedWriters.__geometryBox : ''; if (department === 'science' && !['yes', 'no'].includes(calculator)) fieldError(fields, 'calculator', 'বৈজ্ঞানিক ক্যালকুলেটরের প্রয়োজন নির্বাচন করুন'); if (['science', 'commerce'].includes(department) && !['yes', 'no'].includes(geometryBox)) fieldError(fields, 'geometryBox', 'জ্যামিতি বক্সের প্রয়োজন নির্বাচন করুন') } } catch { fieldError(fields, 'books', 'বইয়ের লেখকের তথ্য সঠিক নয়') }
-    const files = { admission: form.get('admission') as File | null }
+    const files = { admission: form.get('admission') as File | null, guardianProof: form.get('guardianProof') as File | null }
     for (const [key, file] of Object.entries(files)) { if (!file || file.size === 0) fieldError(fields, key, 'প্রয়োজনীয় ফাইল আপলোড করুন'); else if (!allowedTypes.includes(file.type)) fieldError(fields, key, 'JPG, PNG বা WEBP ছবি দিন'); else if (file.size > MAX_FILE_SIZE) fieldError(fields, key, 'ফাইলটি ৮ এমবির নিচে হতে হবে') }
     if (Object.keys(fields).length) return NextResponse.json({ error: 'তথ্যগুলো ঠিক করে আবার চেষ্টা করুন', fields }, { status: 400 })
     const id = `TG-${Date.now().toString(36).toUpperCase()}`
-    const admissionBlob = await putBlob(`applications/${id}/admission-${files.admission!.name}`, files.admission!, { access: 'private', addRandomSuffix: false })
-    await insertApplication({ id, name, phone, email, guardianJob, college, garden, gpa, futurePlan, department, books, bookWriters, marksheetPath: null, proofPath: admissionBlob.pathname })
-    return NextResponse.json({ application: { id, submittedAt: new Date().toISOString(), name, phone, garden, guardianJob, college, dept: department, futurePlan, books, admission: { name: files.admission!.name } } })
+    const [admissionBlob, guardianBlob] = await Promise.all([
+      putBlob(`applications/${id}/admission-${files.admission!.name}`, files.admission!, { access: 'private', addRandomSuffix: false }),
+      putBlob(`applications/${id}/guardian-proof-${files.guardianProof!.name}`, files.guardianProof!, { access: 'private', addRandomSuffix: false }),
+    ])
+    await insertApplication({ id, name, phone, email, guardianJob, college, garden, gpa, futurePlan, department, books, bookWriters, marksheetPath: admissionBlob.pathname, proofPath: guardianBlob.pathname })
+    return NextResponse.json({ application: { id, submittedAt: new Date().toISOString(), name, phone, garden, guardianJob, college, dept: department, futurePlan, books, admission: { name: files.admission!.name }, guardianProof: { name: files.guardianProof!.name } } })
   } catch (error) { console.error('[v0] application submission failed', error); return NextResponse.json({ error: 'আবেদন জমা দেওয়া যায়নি। আবার চেষ্টা করুন।' }, { status: 500 }) }
 }
