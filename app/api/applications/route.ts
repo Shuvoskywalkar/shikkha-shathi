@@ -2,7 +2,7 @@ import { putBlob } from '@/lib/blob'
 import { NextRequest, NextResponse } from 'next/server'
 import { insertApplication, queryApplications } from '@/lib/db'
 
-const ADMIN_PASS = 'lonewolf2026'
+const ADMIN_PASS = 'ShinzoWoSassageyo2026'
 const MAX_FILE_SIZE = 8 * 1024 * 1024
 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
 const fieldError = (fields: Record<string, string>, key: string, message: string) => { if (!fields[key]) fields[key] = message }
