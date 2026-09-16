@@ -10,7 +10,7 @@ const fieldError = (fields: Record<string, string>, key: string, message: string
 export async function GET(request: NextRequest) {
   if (request.headers.get('x-admin-pass') !== ADMIN_PASS) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const rows = await queryApplications()
-  return NextResponse.json({ applications: rows.map((row) => ({ id: row.id, submittedAt: row.createdAt, name: row.name, phone: row.phone, garden: row.garden, guardianJob: row.guardianJob, college: row.college, dept: row.department, gpa: row.gpa, books: row.books, bookWriters: row.bookWriters, marksheet: row.marksheetPath ? { name: 'মার্কশীট' } : null, proof: row.proofPath ? { name: 'প্রমাণপত্র' } : null })) })
+  return NextResponse.json({ applications: rows.map((row) => ({ id: row.id, submittedAt: row.createdAt, name: row.name, phone: row.phone, garden: row.garden, guardianJob: row.guardianJob, college: row.college, dept: row.department, gpa: row.gpa, books: row.books, bookWriters: row.bookWriters, calculatorNeed: row.bookWriters?.__calculator || '', geometryBoxNeed: row.bookWriters?.__geometryBox || '', marksheet: row.marksheetPath ? { name: 'মার্কশীট' } : null, proof: row.proofPath ? { name: 'প্রমাণপত্র' } : null })) })
 }
 
 export async function POST(request: NextRequest) {
