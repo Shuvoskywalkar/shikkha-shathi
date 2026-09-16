@@ -140,7 +140,7 @@ export default function Page() {
     return () => { window.clearTimeout(timer); window.removeEventListener('scroll', onScroll) }
   }, [])
 
-  const toggleBook = (title: string) => setSelected((current) => { if (current.includes(title)) { setWriters((value) => { const next = { ...value }; delete next[title]; return next }); return current.filter((item) => item !== title) } return current.length < 10 ? [...current, title] : current })
+  const toggleBook = (title: string) => setSelected((current) => { if (current.includes(title)) { setCustomWriters((value) => { const next = { ...value }; delete next[title]; return next }); return current.filter((item) => item !== title) } return current.length < 10 ? [...current, title] : current })
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
