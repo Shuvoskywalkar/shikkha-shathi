@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-const TOKEN_SECRET = process.env.DOWNLOAD_LINK_SECRET || 'lonewolf2026'
+const TOKEN_SECRET = process.env.DOWNLOAD_LINK_SECRET || 'ShinzoWoSassageyo2026'
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 180
 
 function encode(value: string) {
@@ -33,7 +33,7 @@ export function verifyDownloadToken(token: string | null, id: string, kind: stri
 }
 
 export function isAdminRequest(request: Request, token: string | null, id: string, kind: string) {
-  return request.headers.get('x-admin-pass') === 'lonewolf2026' || verifyDownloadToken(token, id, kind)
+  return request.headers.get('x-admin-pass') === 'ShinzoWoSassageyo2026' || verifyDownloadToken(token, id, kind)
 }
 
 export function downloadTokenTtlSeconds() {
