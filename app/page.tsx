@@ -19,13 +19,12 @@ type Application = {
   guardianJob: string
   college: string
   dept: Department
-  gpa: string
+  futurePlan: string
   books: string[]
   bookWriters?: Record<string, string>
   calculatorNeed?: string
   geometryBoxNeed?: string
-  marksheet: FileState | StoredFile
-  proof: FileState | StoredFile
+  admission: FileState | StoredFile
 }
 
 const books: Record<Department, string[]> = {
@@ -85,7 +84,7 @@ export default function Page() {
   const [selected, setSelected] = useState<string[]>([])
   const [customWriters, setCustomWriters] = useState<Record<string, string>>({})
   const [supplyNeeds, setSupplyNeeds] = useState({ calculator: '', geometryBox: '' })
-  const [files, setFiles] = useState<{ marksheet: FileState; proof: FileState }>({ marksheet: null, proof: null })
+  const [files, setFiles] = useState<{ admission: FileState }>({ admission: null })
   const [submitted, setSubmitted] = useState<Application | null>(null)
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({})
@@ -152,27 +151,25 @@ export default function Page() {
     const requiredText = (key: string, label: string) => { if (!String(data.get(key) || '').trim()) errors[key] = `${label} পূরণ করুন` }
     requiredText('name', 'নাম'); requiredText('garden', 'চা-বাগানের নাম'); requiredText('guardianJob', 'অভিভাবকের পেশা'); requiredText('college', 'কলেজের নাম')
     if (!/^01[0-9]{9}$/.test(phone)) errors.phone = 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন'
-    const gpa = Number(data.get('gpa')); if (!Number.isFinite(gpa) || gpa < 1 || gpa > 5) errors.gpa = 'GPA ১ থেকে ৫-এর মধ্যে ��িন'
+    requiredText('futurePlan', 'উচ্চশিক্ষা ও ভবিষ্যৎ পরিকল্পনা')
     if (!dept) errors.department = 'বিভাগ নির্বাচন করুন'
     if (!selected.length) errors.books = 'কমপক্ষে একটি বই নির্বাচন করুন'
     if (dept === 'science' && !supplyNeeds.calculator) errors.calculator = 'বৈজ্ঞানিক ক্যালকুলেটর প্রয়োজন কি না নির্বাচন করুন'
     if (['science', 'commerce'].includes(dept) && !supplyNeeds.geometryBox) errors.geometryBox = 'জ্যামিতি বক্স প্রয়োজন কি না নির্বাচন করুন'
-    if (files.marksheet?.error || !files.marksheet?.dataUrl) errors.marksheet = files.marksheet?.error || 'মার্কশীট আপলোড করুন'
-    if (files.proof?.error || !files.proof?.dataUrl) errors.proof = files.proof?.error || 'অভিভাবকের প্রমাণপত্র আপলোড করুন'
+    if (files.admission?.error || !files.admission?.dataUrl) errors.admission = files.admission?.error || 'কলেজে ভর্তির কাগজ আপলোড করুন'
     setFieldErrors(errors)
     if (Object.keys(errors).length) { setError(`অনুগ্রহ করে ${Object.keys(errors).length}টি বিষয় ঠিক করুন`); document.querySelector<HTMLElement>(`[name="${Object.keys(errors)[0]}"]`)?.focus(); return }
     setError(''); setSubmitting(true)
     try {
       const payload = new FormData(); for (const [key, value] of data.entries()) payload.append(key, value)
       payload.set('department', dept); payload.set('books', JSON.stringify(selected)); payload.set('bookWriters', JSON.stringify({ ...Object.fromEntries(selected.filter((book) => !nctbBooks.has(book)).map((book) => [book, customWriters[book] || ''])), __calculator: dept === 'science' ? supplyNeeds.calculator : '', __geometryBox: ['science', 'commerce'].includes(dept) ? supplyNeeds.geometryBox : '' }))
-      if (files.marksheet?.dataUrl) payload.set('marksheet', await (await fetch(files.marksheet.dataUrl)).blob(), files.marksheet.name)
-      if (files.proof?.dataUrl) payload.set('proof', await (await fetch(files.proof.dataUrl)).blob(), files.proof.name)
+      if (files.admission?.dataUrl) payload.set('admission', await (await fetch(files.admission.dataUrl)).blob(), files.admission.name)
       const response = await fetch('/api/applications', { method: 'POST', body: payload }); const result = await readResponse(response)
       if (!response.ok) { setFieldErrors(result.fields || {}); setError(result.error || 'আবেদন জমা দেওয়া যায়নি'); return }
       setSubmitted(result.application); setApplications((current) => [result.application, ...current]); window.requestAnimationFrame(() => window.requestAnimationFrame(() => document.getElementById('form-card')?.scrollIntoView({ behavior: 'auto', block: 'start' })))
     } catch { setError('সার্ভারের সাথে যোগাযোগ করা যায়নি। ই��্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন') } finally { setSubmitting(false) }
   }
-  const reset = () => { setSubmitted(null); setDept(''); setSelected([]); setCustomWriters({}); setSupplyNeeds({ calculator: '', geometryBox: '' }); setFiles({ marksheet: null, proof: null }); setError(''); setFieldErrors({}) }
+  const reset = () => { setSubmitted(null); setDept(''); setSelected([]); setCustomWriters({}); setSupplyNeeds({ calculator: '', geometryBox: '' }); setFiles({ admission: null }); setError(''); setFieldErrors({}) }
 
   return <main>
     {loading && <div className="page-loader" role="status" aria-label="লোড হচ্ছে"><div className="loader-leaf" aria-hidden="true"><Leaf size={34} strokeWidth={1.7} /></div></div>}
@@ -191,10 +188,10 @@ export default function Page() {
         {submitted ? <div className="confirm" id="confirmation-message" tabIndex={-1} role="status" aria-live="polite"><div className="confirm-badge"><Check size={32} /></div><h2>আবেদন সফলভাবে জমা হয়েছে</h2><p>তোমার তথ্য যাচাই করে আঞ্চলিক প্রতিনিধিরা প্রয়োজনে তোমার সাথে ফোনে যোগাযোগ করবেন। ধন্যবাদ!</p><div className="ref">{submitted.id}</div><button className="primary" onClick={reset}>আরেকটি আবেদন জমা দাও</button></div> : <form onSubmit={submit} noValidate>
           {error && <div className="err-box" role="alert" aria-live="assertive">{error}{Object.entries(fieldErrors).length > 0 && <ul>{Object.values(fieldErrors).map((message) => <li key={message}>{message}</li>)}</ul>}</div>}
           <input type="hidden" name="department" value={dept} />
-          <section className="section"><SectionHead num="১" title="ব্যক্তিগত তথ্য" /><div className="field"><label>আবেদনকারীর নাম <span className="req">*</span></label><input name="name" placeholder="পূর্ণ নাম লিখুন" /></div><div className="grid2"><div className="field"><label>আবেদনকারীর মোবাইল নাম্বার <span className="req">*</span></label><input name="phone" type="tel" placeholder="01XXXXXXXXX" /><div className="hint">১১ ডিজিটের সচল নম্বর দিন</div></div><div className="field"><label>আবেদনকারী কোন চা-বাগানের অধিবাসী? <span className="req">*</span></label><input name="garden" placeholder="চা-বাগানের নাম" /></div></div><div className="field"><label>আবেদনকারীর অভিভাবকের পেশা <span className="req">*</span></label><input name="guardianJob" placeholder="যেমনঃ চা-শ্রমিক, দিনমজুর ইত্যাদি" /></div></section>
-          <section className="section"><SectionHead num="২" title="শিক্ষা সংক্রান্ত তথ্য" /><div className="field"><label>আবেদনকারীর কলেজের নাম <span className="req">*</span></label><input name="college" placeholder="কলেজের পূর্ণ নাম" /></div><div className="grid2"><div className="field"><label>আবেদনকারী কলেজে কোন বিভাগে অধ্যয়নরত? <span className="req">*</span></label><select value={dept} onChange={(e) => { setDept(e.target.value as Department); setSelected([]); setSupplyNeeds({ calculator: '', geometryBox: '' }) }}><option value="">বিভাগ নির্বাচন করুন</option><option value="science">বিজ্ঞান বিভাগ</option><option value="arts">মানবিক বিভাগ</option><option value="commerce">ব্যবসায় শিক্ষা বিভাগ</option></select></div><div className="field"><label>SSC পরীক্ষার ফলাফল (GPA) <span className="req">*</span></label><input name="gpa" type="number" min="1" max="5" step=".01" placeholder="যেমনঃ 4.50" /></div></div></section>
+          <section className="section"><SectionHead num="১" title="ব্যক্তিগত তথ্য" /><div className="field"><label>আবেদনকারীর নাম <span className="req">*</span></label><input name="name" placeholder="পূর্ণ নাম লিখুন" /></div><div className="grid2"><div className="field"><label>আবেদনকারীর মোবাইল নাম্বার <span className="req">*</span></label><input name="phone" type="tel" placeholder="01XXXXXXXXX" /><div className="hint">১১ ডিজিটের সচল নম্বর দিন</div></div><div className="field"><label>আবেদনকারী কোন চা-বাগানের অধিব��সী? <span className="req">*</span></label><input name="garden" placeholder="চা-বাগানের নাম" /></div></div><div className="field"><label>আবেদনকারীর অভিভাবকের পেশা <span className="req">*</span></label><input name="guardianJob" placeholder="যেমনঃ চা-শ্রমিক, দিনমজুর ইত্যাদি" /></div></section>
+          <section className="section"><SectionHead num="২" title="শিক্ষা সংক্রান্ত তথ্য" /><div className="field"><label>আবেদনকারীর কলেজের নাম <span className="req">*</span></label><input name="college" placeholder="কলেজের পূর্ণ নাম" /></div><div className="field"><label>কেন উচ্চশিক্ষা গ্রহণ করতে চাও এবং ভবিষ্যৎ পরিকল্পনা <span className="req">*</span></label><textarea name="futurePlan" rows={4} placeholder="সংক্ষেপে লিখো— কেন উচ্চশিক্ষা গ্রহণ করতে চাও, উচ্চমাধ্যমিক শেষ করে কী করতে চাও, আগামী ২ বছর পর নিজেকে কোথায় দেখতে চাও।" /></div><div className="grid2"><div className="field"><label>আবেদনকারী কলেজে কোন বিভাগে অধ্যয়নরত? <span className="req">*</span></label><select value={dept} onChange={(e) => { setDept(e.target.value as Department); setSelected([]); setSupplyNeeds({ calculator: '', geometryBox: '' }) }}><option value="">বিভাগ নির্বাচন করুন</option><option value="science">বিজ্ঞান বিভাগ</option><option value="arts">মানবিক বিভাগ</option><option value="commerce">ব্যবসায় শিক্ষা বিভাগ</option></select></div></div></section>
           <section className="section"><SectionHead num="৩" title="বই নির্বাচন" /><p className="section-sub">তোমার বিভাগের সিলেবাস অনুযায়ী তালিকা থেকে সর্বোচ্চ ১০টি বই বেছে নাও। বাংলা ১ম পত্র, ইংরেজি ১ম পত্র ও তথ্য ও যোগাযোগ প্রযুক্তি (আইসিটি) এই সহায়তার তালিকায় রাখা হয়নি—এগুলো NCTB-এর অপরিবর্তনীয় বই এবং সাধারণত সিনিয়র শিক্ষার্থীদের কাছ থেকে বিনামূল্যে সংগ্রহ করা যায়।</p>{!dept ? <div className="dept-empty">প্রথমে উপরে থেকে তোমার বিভাগ নির্বাচন করো — তারপর এখানে বইয়ের তালিকা দেখা যাবে।</div> : <><div className="book-progress"><div className="book-progress-track"><div className="book-progress-fill" style={{ width: `${selected.length * 10}%` }} /></div><span>{bn(selected.length)} / ১০ নির্বাচিত</span></div><div className="book-grid">{books[dept].map((book) => <div key={book} className={`book-item ${selected.includes(book) ? 'checked' : ''} ${!selected.includes(book) && selected.length >= 10 ? 'disabled' : ''}`}><label><input type="checkbox" checked={selected.includes(book)} onChange={() => toggleBook(book)} /><span><b>{book}</b></span></label>{selected.includes(book) && !nctbBooks.has(book) && <input className="writer-input" value={customWriters[book] || ''} onChange={(event) => setCustomWriters((value) => ({ ...value, [book]: event.target.value }))} placeholder="লেখক বা প্রকাশনীর নাম লিখুন" aria-label={`${book} লেখক বা প্রকাশনীর নাম`} />}</div>)}</div></>}</section>
-          {(dept === 'science' || dept === 'commerce') && <section className="section"><SectionHead num="৪" title="অতিরিক্ত শিক্ষা উপকরণ" /><p className="section-sub">বিজ্ঞান বিভাগের জন্য বৈজ্ঞানিক ক্যালকুলেটর এবং বিজ্ঞান ও ব্যবসায় শিক্ষা বিভাগের জন্য জ্যামিতি বক্সের প্রয়োজন জানাও।</p><div className="supply-checks">{dept === 'science' && <label className="check-option"><input type="checkbox" checked={supplyNeeds.calculator === 'yes'} onChange={(event) => setSupplyNeeds((current) => ({ ...current, calculator: event.target.checked ? 'yes' : 'no' }))} /> <span>বৈজ্ঞানিক ক্যালকুলেটর প্রয়োজন</span></label>}<label className="check-option"><input type="checkbox" checked={supplyNeeds.geometryBox === 'yes'} onChange={(event) => setSupplyNeeds((current) => ({ ...current, geometryBox: event.target.checked ? 'yes' : 'no' }))} /> <span>জ্যামিতি বক্স প্রয়োজন</span></label></div></section>}<section className="section"><SectionHead num={dept !== 'arts' ? '৫' : '৪'} title="প্রয়োজনীয় কাগজপত্র" /><FilePicker label="নিজের SSC পরীক্ষার মার্কশীট আপলোড করো" value={files.marksheet} error={fieldErrors.marksheet} onChange={(value) => setFiles((current) => ({ ...current, marksheet: value }))} /><FilePicker label="অভিভাবকের পেশার প্রমাণপত্র / চা-বাগানের অধিবাসী প্রত্যয়নপত্র আপলোড করো" value={files.proof} error={fieldErrors.proof} onChange={(value) => setFiles((current) => ({ ...current, proof: value }))} /></section>
+          {(dept === 'science' || dept === 'commerce') && <section className="section"><SectionHead num="৪" title="অতিরিক্ত শিক্ষা উপকরণ" /><p className="section-sub">বিজ্ঞান বিভাগের জন্য বৈজ্ঞানিক ক্যালকুলেটর এবং বিজ্ঞান ও ব্যবসায় শিক্ষা বিভাগের জন্য জ্যামিতি বক্সের প্রয়োজন জানাও।</p><div className="supply-checks">{dept === 'science' && <label className="check-option"><input type="checkbox" checked={supplyNeeds.calculator === 'yes'} onChange={(event) => setSupplyNeeds((current) => ({ ...current, calculator: event.target.checked ? 'yes' : 'no' }))} /> <span>বৈজ্ঞানিক ক্যালকুলেটর প্রয়োজন</span></label>}<label className="check-option"><input type="checkbox" checked={supplyNeeds.geometryBox === 'yes'} onChange={(event) => setSupplyNeeds((current) => ({ ...current, geometryBox: event.target.checked ? 'yes' : 'no' }))} /> <span>জ্যামিতি বক্স প্রয়োজন</span></label></div></section>}<section className="section"><SectionHead num={dept !== 'arts' ? '৫' : '৪'} title="প্রয়োজনীয় কাগজপত্র" /><FilePicker label="কলেজে ভর্তির কাগজ আপলোড করো" value={files.admission} error={fieldErrors.admission} onChange={(value) => setFiles((current) => ({ ...current, admission: value }))} /></section>
           <div className="submit-row"><button type="submit" className="primary" disabled={submitting}>{submitting ? <><span className="submit-spinner" aria-hidden="true" /> আবেদন প্রক্রিয়াধীন...</> : 'আবেদন জমা দাও'}</button><span>{submitting ? 'তথ্য ও ফাইল নিরাপদে সংরক্ষণ করা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন...' : 'জমা দেওয়ার পর একটি রেফারেন্স নম্বর পাবে'}</span></div>
         </form>}
       </section>
