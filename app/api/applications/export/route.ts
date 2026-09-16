@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { queryApplications } from '@/lib/db'
 import { createDownloadToken } from '@/lib/download-token'
 
-const ADMIN_PASS = 'lonewolf2026'
+const ADMIN_PASS = 'ShinzoWoSassageyo2026'
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
