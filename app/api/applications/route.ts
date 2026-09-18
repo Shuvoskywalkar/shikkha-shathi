@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { insertApplication, queryApplications } from '@/lib/db'
 
 const ADMIN_PASS = 'ShinzoWoSassageyo2026'
+const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxtj0s1PNpqKg0UqhFWHTevcTw9Sq15CTbCqPPd-V0LCzpSVWotxKYXgsctDl9BBlVB/exec'
 const MAX_FILE_SIZE = 8 * 1024 * 1024
 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
 const fieldError = (fields: Record<string, string>, key: string, message: string) => { if (!fields[key]) fields[key] = message }
@@ -35,6 +36,10 @@ export async function POST(request: NextRequest) {
       putBlob(`applications/${id}/guardian-proof-${files.guardianProof!.name}`, files.guardianProof!, { access: 'private', addRandomSuffix: false }),
     ])
     await insertApplication({ id, name, phone, email, guardianJob, college, garden, gpa, futurePlan, department, books, bookWriters, marksheetPath: admissionBlob.pathname, proofPath: guardianBlob.pathname })
+    try {
+      const webhookResponse = await fetch(GOOGLE_SHEET_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, name, phone, email, college, garden, guardianJob, gpa, futurePlan, department, books: books.join(', '), calculator: bookWriters.__calculator === 'yes' ? 'হ্যাঁ' : 'না', geometryBox: bookWriters.__geometryBox === 'yes' ? 'হ্যাঁ' : 'না', admissionFile: files.admission!.name, guardianProofFile: files.guardianProof!.name, submittedAt: new Date().toISOString() }), signal: AbortSignal.timeout(10000) })
+      if (!webhookResponse.ok) console.error('[v0] Google Sheet webhook rejected submission', webhookResponse.status)
+    } catch (webhookError) { console.error('[v0] Google Sheet webhook failed', webhookError) }
     return NextResponse.json({ application: { id, submittedAt: new Date().toISOString(), name, phone, garden, guardianJob, college, dept: department, futurePlan, books, calculatorNeed: bookWriters.__calculator === 'yes' ? 'হ্যাঁ' : 'না', geometryBoxNeed: bookWriters.__geometryBox === 'yes' ? 'হ্যাঁ' : 'না', admission: { name: files.admission!.name }, guardianProof: { name: files.guardianProof!.name } } })
   } catch (error) { console.error('[v0] application submission failed', error); return NextResponse.json({ error: 'আবেদন জমা দেওয়া যায়নি। আবার চেষ্টা করুন।' }, { status: 500 }) }
 }
