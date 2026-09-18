@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { insertApplication, queryApplications } from '@/lib/db'
 
 const ADMIN_PASS = 'ShinzoWoSassageyo2026'
-const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxtj0s1PNpqKg0UqhFWHTevcTw9Sq15CTbCqPPd-V0LCzpSVWotxKYXgsctDl9BBlVB/exec'
+const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbybFIq-MIE92N5Nnel0k3BCaZytzk_35Xb_YoMDSnMtZGMDa7i6936XcY2mZ2TLdK5M0A/exec'
 const MAX_FILE_SIZE = 8 * 1024 * 1024
 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
 const fieldError = (fields: Record<string, string>, key: string, message: string) => { if (!fields[key]) fields[key] = message }
