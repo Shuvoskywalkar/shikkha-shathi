@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { insertApplication, queryApplications } from '@/lib/db'
 
 const ADMIN_PASS = 'ShinzoWoSassageyo2026'
+const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbybFIq-MIE92N5Nnel0k3BCaZytzk_35Xb_YoMDSnMtZGMDa7i6936XcY2mZ2TLdK5M0A/exec'
 const MAX_FILE_SIZE = 8 * 1024 * 1024
 const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
 const fieldError = (fields: Record<string, string>, key: string, message: string) => { if (!fields[key]) fields[key] = message }
@@ -10,7 +11,7 @@ const fieldError = (fields: Record<string, string>, key: string, message: string
 export async function GET(request: NextRequest) {
   if (request.headers.get('x-admin-pass') !== ADMIN_PASS) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const rows = await queryApplications()
-  return NextResponse.json({ applications: rows.map((row) => ({ id: row.id, submittedAt: row.createdAt, name: row.name, phone: row.phone, garden: row.garden, guardianJob: row.guardianJob, college: row.college, gpa: row.gpa, dept: row.department, futurePlan: row.futurePlan, books: row.books, bookWriters: row.bookWriters, calculatorNeed: row.bookWriters?.__calculator || '', geometryBoxNeed: row.bookWriters?.__geometryBox || '', marksheet: row.marksheetPath ? { name: 'মার্কশীট' } : null, proof: row.proofPath ? { name: 'প্রমাণপত্র' } : null })) })
+  return NextResponse.json({ applications: rows.map((row) => ({ id: row.id, submittedAt: row.createdAt, name: row.name, phone: row.phone, garden: row.garden, guardianJob: row.guardianJob, college: row.college, gpa: row.gpa, dept: row.department, futurePlan: row.futurePlan, books: row.books, bookWriters: row.bookWriters, calculatorNeed: ['yes', 'হ্যাঁ', 'প্রয়োজন'].includes(row.bookWriters?.__calculator || '') ? 'হ্যাঁ' : 'না', geometryBoxNeed: ['yes', 'হ্যাঁ', 'প্রয়োজন'].includes(row.bookWriters?.__geometryBox || '') ? 'হ্যাঁ' : 'না', marksheet: row.marksheetPath ? { name: 'কলেজে ভর্তির কাগজ' } : null, proof: row.proofPath ? { name: 'অভিভাবকের কাগজ' } : null })) })
 }
 
 export async function POST(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     if (!['science', 'arts', 'commerce'].includes(department)) fieldError(fields, 'department', 'বিভাগ নির্বাচন করুন')
     let books: string[] = []; let bookWriters: Record<string, string> = {}; try { const parsed = JSON.parse(String(form.get('books') || '[]')); if (Array.isArray(parsed)) books = parsed.filter((book): book is string => typeof book === 'string' && book.trim()).map((book) => book.trim()) } catch { fieldError(fields, 'books', 'বইয়ের তালিকা সঠিক নয়') }
     if (books.length < 1 || books.length > 10) fieldError(fields, 'books', '১ থেকে ১০টি বই নির্বাচন করুন')
-    try { const parsedWriters = JSON.parse(String(form.get('bookWriters') || '{}')); if (parsedWriters && typeof parsedWriters === 'object' && !Array.isArray(parsedWriters)) { bookWriters = Object.fromEntries(books.map((book) => [book, typeof parsedWriters[book] === 'string' ? parsedWriters[book].trim() : ''])); const calculator = typeof parsedWriters.__calculator === 'string' ? parsedWriters.__calculator : ''; const geometryBox = typeof parsedWriters.__geometryBox === 'string' ? parsedWriters.__geometryBox : ''; if (department === 'science' && !['yes', 'no'].includes(calculator)) fieldError(fields, 'calculator', 'বৈজ্ঞানিক ক্যালকুলেটরের প্রয়োজন নির্বাচন করুন'); if (['science', 'commerce'].includes(department) && !['yes', 'no'].includes(geometryBox)) fieldError(fields, 'geometryBox', 'জ্যামিতি বক্সের প্রয়োজন নির্বাচন করুন') } } catch { fieldError(fields, 'books', 'বইয়ের লেখকের তথ্য সঠিক নয়') }
+    try { const parsedWriters = JSON.parse(String(form.get('bookWriters') || '{}')); if (parsedWriters && typeof parsedWriters === 'object' && !Array.isArray(parsedWriters)) { bookWriters = { ...Object.fromEntries(books.map((book) => [book, typeof parsedWriters[book] === 'string' ? parsedWriters[book].trim() : ''])), __calculator: String(parsedWriters.__calculator) === 'yes' ? 'yes' : 'no', __geometryBox: String(parsedWriters.__geometryBox) === 'yes' ? 'yes' : 'no' }; const calculator = bookWriters.__calculator; const geometryBox = bookWriters.__geometryBox; if (department === 'science' && !['yes', 'no'].includes(calculator)) fieldError(fields, 'calculator', 'বৈজ্ঞানিক ক্যালকুলেটরের প্রয়োজন নির্বাচন করুন'); if (['science', 'commerce'].includes(department) && !['yes', 'no'].includes(geometryBox)) fieldError(fields, 'geometryBox', 'জ্যামিতি বক্সের প্রয়োজন নির্বাচন করুন') } } catch { fieldError(fields, 'books', 'বইয়ের লেখকের তথ্য সঠিক নয়') }
     const files = { admission: form.get('admission') as File | null, guardianProof: form.get('guardianProof') as File | null }
     for (const [key, file] of Object.entries(files)) { if (!file || file.size === 0) fieldError(fields, key, 'প্রয়োজনীয় ফাইল আপলোড করুন'); else if (!allowedTypes.includes(file.type)) fieldError(fields, key, 'JPG, PNG বা WEBP ছবি দিন'); else if (file.size > MAX_FILE_SIZE) fieldError(fields, key, 'ফাইলটি ৮ এমবির নিচে হতে হবে') }
     if (Object.keys(fields).length) return NextResponse.json({ error: 'তথ্যগুলো ঠিক করে আবার চেষ্টা করুন', fields }, { status: 400 })
@@ -35,6 +36,13 @@ export async function POST(request: NextRequest) {
       putBlob(`applications/${id}/guardian-proof-${files.guardianProof!.name}`, files.guardianProof!, { access: 'private', addRandomSuffix: false }),
     ])
     await insertApplication({ id, name, phone, email, guardianJob, college, garden, gpa, futurePlan, department, books, bookWriters, marksheetPath: admissionBlob.pathname, proofPath: guardianBlob.pathname })
-    return NextResponse.json({ application: { id, submittedAt: new Date().toISOString(), name, phone, garden, guardianJob, college, dept: department, futurePlan, books, admission: { name: files.admission!.name }, guardianProof: { name: files.guardianProof!.name } } })
+    try {
+      const departmentLabels: Record<string, string> = { science: 'বিজ্ঞান বিভাগ', arts: 'মানবিক বিভাগ', commerce: 'ব্যবসায় শিক্ষা বিভাগ' }
+      const toBase64 = async (file: File) => Buffer.from(await file.arrayBuffer()).toString('base64')
+      const [admissionData, guardianProofData] = await Promise.all([toBase64(files.admission!), toBase64(files.guardianProof!)])
+      const webhookResponse = await fetch(GOOGLE_SHEET_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, name, phone, email, college, garden, guardianJob, gpa, futurePlan, department: departmentLabels[department] || department, books: books.join(' | '), bookWriters: books.map((book) => bookWriters[book] ? `${book}: ${bookWriters[book]}` : book).join(' | '), calculator: bookWriters.__calculator === 'yes' ? 'হ্যাঁ' : 'না', geometryBox: bookWriters.__geometryBox === 'yes' ? 'হ্যাঁ' : 'না', admissionFile: { name: files.admission!.name, mimeType: files.admission!.type, base64: admissionData }, guardianProofFile: { name: files.guardianProof!.name, mimeType: files.guardianProof!.type, base64: guardianProofData }, submittedAt: new Date().toISOString() }), signal: AbortSignal.timeout(30000) })
+      if (!webhookResponse.ok) console.error('[v0] Google Sheet webhook rejected submission', webhookResponse.status)
+    } catch (webhookError) { console.error('[v0] Google Sheet webhook failed', webhookError) }
+    return NextResponse.json({ application: { id, submittedAt: new Date().toISOString(), name, phone, garden, guardianJob, college, dept: department, futurePlan, books, bookWriters, calculatorNeed: bookWriters.__calculator === 'yes' ? 'হ্যাঁ' : 'না', geometryBoxNeed: bookWriters.__geometryBox === 'yes' ? 'হ্যাঁ' : 'না', admission: { name: files.admission!.name }, guardianProof: { name: files.guardianProof!.name } } })
   } catch (error) { console.error('[v0] application submission failed', error); return NextResponse.json({ error: 'আবেদন জমা দেওয়া যায়নি। আবার চেষ্টা করুন।' }, { status: 500 }) }
 }
